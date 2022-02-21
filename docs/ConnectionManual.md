@@ -18,7 +18,7 @@ For a successfull connection to the gateway there are several steps to prepare:
  3) After Onboarding in the Test Environment, check the connectivity with the following command:<br>
   ```curl -vvv -H "Accept: */*" --resolve ****.com:443 --cert "auth_de.pem" --key "key.pem" https://****.com/trustList``` <br>
     You should see a output like: <br>
-    ![TrustListOutput](./../images/TrustListResult.PNG)
+    ![TrustListOutput](./images/TrustListResult.PNG)
  4) Test the other Truslist Routes in the same style (e.g. with DSC/CSCA/Upload/Authentication...)
  5) Create an Document Signer Certificate  and sign it by the CSCA
  6) Create an CMS Package with the following Command: 
