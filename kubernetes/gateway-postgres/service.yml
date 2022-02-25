@@ -7,3 +7,9 @@ metadata:
   namespace: default
 spec:
   type: ClusterIP
+  selector:
+    app: ddcc-gateway-postgres
+  ports:
+    - protocol: TCP
+      port: 443
+      targetPort: 8090
