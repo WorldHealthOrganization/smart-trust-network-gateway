@@ -5,3 +5,9 @@ metadata:
   namespace: default
 spec:
   type: LoadBalancer
+  selector:
+    app: ddcc-gateway-postgres
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
