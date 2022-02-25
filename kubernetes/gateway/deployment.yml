@@ -39,7 +39,7 @@ spec:
           {{- with secret "gateway/data/federation" -}}
             export DGC_FEDERATION_KEYSTOREPASSWORD={{ .Data.data.keystorepassword}}
             export DGC_FEDERATION_KEYSTOREKEYPASSWORD {{ .Data.data.keystorekeypassword}}
-          {{- end -}}\n"
+          {{- end -}}
         vault.hashicorp.com/agent-inject-template-keystore.jks: |
           {{- with secret "gateway/data/mtls" -}}
             {{base64Decode .Data.data.keystore}}
