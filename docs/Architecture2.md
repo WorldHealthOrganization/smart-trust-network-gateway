@@ -15,7 +15,7 @@ To support the did document feature according to the trust specification, the ga
 ![](pictures/architecture/TechnicalChanges.drawio.png)
 
 ## Azure Architecture
-![](pictures/architecture/AzureArchitecture.png)
+![](pictures/architecture/AzureArchitecture.drawio.png)
 
 
 ## Onboarding Process Concept
