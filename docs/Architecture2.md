@@ -1,7 +1,7 @@
 ## Introduction
-In the last version of the DDCCG architecture, the changes for trusted issuers and trusted certificates were made to allow different types of technologies in trust verification. This could be either X509 or DIDs according to the DID Core Specification[^1]. During the last iterations of specification and alignment with member states, there were some key points which must be additionally supported in the gateway:  
+In the last version of the TNG[^1] architecture, the changes for trusted issuers and trusted certificates were made to allow different types of technologies in trust verification. This could be either X509 or DIDs according to the DID Core Specification[^2]. During the last iterations of specification and alignment with member states, there were some key points which must be additionally supported in the gateway:  
 
-* Native DID Support for the GW Trustlists (DID Document Format)
+* Native DID Support for the GateWay's Trustlists (DID Document Format)
 * Decentralized Exchange of DID Documents to provide it to verifiers
 * WHO aligned onboarding process for member states
 
@@ -42,4 +42,5 @@ The secretariat must handle the following tasks to establish the onboarding proc
 
 
 ________________
-[^1]: DID Core,   https://www.w3.org/TR/did-core/
+[^1]: TNG Trust Network Gateway, formerly named DDCC Digital Documentation of Covid Certificates  
+[^2]: DID Core,   https://www.w3.org/TR/did-core/
