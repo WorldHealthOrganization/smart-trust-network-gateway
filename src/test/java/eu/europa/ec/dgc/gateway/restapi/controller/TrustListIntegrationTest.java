@@ -51,6 +51,7 @@ import java.time.ZonedDateTime;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -99,11 +100,16 @@ class TrustListIntegrationTest {
 
     X509Certificate certUploadDe, certUploadEu, certCscaDe, certCscaEu, certAuthDe, certAuthEu, certDscDe, certDscEu;
 
-    @BeforeEach
-    void testData() throws Exception {
+    @AfterEach
+    public void cleanUp() {
         trustedIssuerRepository.deleteAll();
         trustedPartyRepository.deleteAll();
         signerInformationRepository.deleteAll();
+    }
+
+    @BeforeEach
+    void testData() throws Exception {
+        cleanUp();
 
         certUploadDe = trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.UPLOAD, "DE");
         certUploadEu = trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.UPLOAD, "EU");

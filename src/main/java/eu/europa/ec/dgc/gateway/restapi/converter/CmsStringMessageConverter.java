@@ -82,7 +82,7 @@ public class CmsStringMessageConverter extends AbstractHttpMessageConverter<Sign
             .payloadString(parser.getPayload())
             .signerCertificate(parser.getSigningCertificate())
             .rawMessage(new String(inputBytes, StandardCharsets.UTF_8))
-            .signature(parser.getSignature())
+            .signature(parser.getDetachedSignature())
             .verified(parser.isSignatureVerified())
             .build();
     }

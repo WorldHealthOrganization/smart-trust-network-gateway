@@ -26,6 +26,10 @@ import eu.europa.ec.dgc.gateway.exception.DgcgResponseException;
 import eu.europa.ec.dgc.gateway.restapi.mapper.CertificateRoleMapper;
 import eu.europa.ec.dgc.gateway.service.TrustedPartyService;
 import eu.europa.ec.dgc.gateway.utils.DgcMdc;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -35,10 +39,6 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.util.encoders.DecoderException;
@@ -140,7 +140,7 @@ public class CertificateAuthenticationFilter extends OncePerRequestFilter {
                 (PreAuthenticatedAuthenticationToken) httpServletRequest.getUserPrincipal();
 
             X509Certificate certificate = (X509Certificate) token.getCredentials();
-            certDistinguishedName = certificate.getSubjectDN().toString();
+            certDistinguishedName = certificate.getSubjectX500Principal().toString();
         } else {
             log.debug("No Client Certificate found, using Request Headers");
 

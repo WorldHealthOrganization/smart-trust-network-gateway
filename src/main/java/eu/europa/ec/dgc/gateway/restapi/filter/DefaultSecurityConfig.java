@@ -21,20 +21,26 @@
 package eu.europa.ec.dgc.gateway.restapi.filter;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @Profile("!mtls")
 @Slf4j
-public class DefaultSecurityConfig extends WebSecurityConfigurerAdapter {
+public class DefaultSecurityConfig {
 
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http.csrf().disable()
-            .authorizeRequests().anyRequest().permitAll();
+    /**
+     * Default Spring Security Config for requests secured via LoadBalancer in front of the Gateway.
+     */
+    @Bean
+    public SecurityFilterChain configure(HttpSecurity http) throws Exception {
+        return http
+            .csrf().disable()
+            .authorizeHttpRequests().anyRequest().permitAll()
+            .and().build();
     }
 }
 

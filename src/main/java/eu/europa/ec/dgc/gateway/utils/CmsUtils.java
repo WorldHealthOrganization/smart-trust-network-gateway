@@ -40,7 +40,7 @@ public class CmsUtils {
             .payloadString(messageParser.getPayload())
             .signerCertificate(messageParser.getSigningCertificate())
             .rawMessage(cms)
-            .signature(messageParser.getSignature())
+            .signature(messageParser.getDetachedSignature())
             .verified(messageParser.isSignatureVerified())
             .build();
     }
@@ -54,7 +54,7 @@ public class CmsUtils {
             .payloadCertificate(certificateParser.getPayload())
             .signerCertificate(certificateParser.getSigningCertificate())
             .rawMessage(cms)
-            .signature(certificateParser.getSignature())
+            .signature(certificateParser.getDetachedSignature())
             .verified(certificateParser.isSignatureVerified())
             .build();
     }

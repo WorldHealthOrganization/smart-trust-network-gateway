@@ -41,6 +41,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -73,11 +74,16 @@ class TrustListServiceTest {
 
     FederationGatewayEntity federationGateway;
 
-    @BeforeEach
-    void testData() throws Exception {
+    @AfterEach
+    public void cleanUp() {
         trustedPartyRepository.deleteAll();
         signerInformationRepository.deleteAll();
         federationGatewayRepository.deleteAll();
+    }
+
+    @BeforeEach
+    void testData() throws Exception {
+        cleanUp();
 
         federationGateway =
             new FederationGatewayEntity(null, ZonedDateTime.now(), "gw-id", "endpoint", "kid", "pk", "impl",

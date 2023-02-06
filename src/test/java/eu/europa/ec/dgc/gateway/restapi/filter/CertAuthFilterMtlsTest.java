@@ -60,7 +60,7 @@ class CertAuthFilterMtlsTest {
     void testFilterShouldAppendCountryAndThumbprintToRequestObjectFrommTLSCert() throws Exception {
         String certHash = trustedPartyTestHelper.getHash(TrustedPartyEntity.CertificateType.AUTHENTICATION, countryCode);
 
-        mockMvc.perform(post("/signerCertificate/")
+        mockMvc.perform(post("/signerCertificate")
             .with(x509(trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.AUTHENTICATION, countryCode)))
             .contentType("application/cms")
         ).andExpect(mvcResult -> {
@@ -83,7 +83,7 @@ class CertAuthFilterMtlsTest {
         ).orElseThrow();
         trustedPartyRepository.delete(entity);
 
-        mockMvc.perform(post("/signerCertificate/")
+        mockMvc.perform(post("/signerCertificate")
             .with(x509(certificate))
             .contentType("application/cms")
         ).andExpect(status().isUnauthorized());

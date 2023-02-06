@@ -7,11 +7,11 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-java@v2
         with:
-          java-version: 11
+          java-version: 17
           distribution: adopt
       - uses: actions/checkout@v2
         with:
@@ -62,11 +62,11 @@ jobs:
           name: DDCCG001_PRD
           path: target/DDCCG001_PRD*
   build-docker:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-java@v2
         with:
-          java-version: 11
+          java-version: 17
           distribution: adopt
       - uses: actions/checkout@v2
         with:
@@ -124,11 +124,11 @@ jobs:
           APP_PACKAGES_USERNAME: ${{ github.actor }}
           APP_PACKAGES_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
   license:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-java@v2
         with:
-          java-version: 11
+          java-version: 17
           distribution: adopt
       - uses: actions/checkout@v2
         with:

@@ -26,30 +26,36 @@ import java.security.cert.X509Certificate;
 import java.util.Collections;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.preauth.x509.X509PrincipalExtractor;
 
 @Configuration
 @Profile("mtls")
 @Slf4j
-public class MtlsSecurityConfig extends WebSecurityConfigurerAdapter {
+public class MtlsSecurityConfig {
 
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http
+    /**
+     * Configures Spring Security to check provided client certificate and add it to request parameters.
+     * Actual Authorization check will be done by {@link CertificateAuthenticationFilter}
+     */
+    @Bean
+    public SecurityFilterChain configure(HttpSecurity http) throws Exception {
+        return http
             .csrf().disable()
             .x509()
             .userDetailsService(userDetailsService())
-            .x509PrincipalExtractor(new ThumbprintX509PrincipalExtractor());
+            .x509PrincipalExtractor(new ThumbprintX509PrincipalExtractor())
+            .and().build();
     }
 
-    @Override
-    protected UserDetailsService userDetailsService() {
+    @Bean
+    public UserDetailsService userDetailsService() {
         return hash -> new User(hash, "", Collections.emptyList());
     }
 

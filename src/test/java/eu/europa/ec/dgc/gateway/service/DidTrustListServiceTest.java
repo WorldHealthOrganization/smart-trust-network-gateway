@@ -51,6 +51,7 @@ import java.util.LinkedHashMap;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -101,11 +102,16 @@ public class DidTrustListServiceTest {
 
     FederationGatewayEntity federationGateway;
 
-    @BeforeEach
-    void testData() throws Exception {
+    @AfterEach
+    public void cleanUp() {
         trustedPartyRepository.deleteAll();
         signerInformationRepository.deleteAll();
         federationGatewayRepository.deleteAll();
+    }
+
+    @BeforeEach
+    void testData() throws Exception {
+        cleanUp();
 
         federationGateway =
             new FederationGatewayEntity(null, ZonedDateTime.now(), "gw-id", "endpoint", "kid", "pk", "impl",

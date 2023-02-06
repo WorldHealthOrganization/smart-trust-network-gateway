@@ -141,7 +141,7 @@ public class DidTrustListService {
             Optional<X509Certificate> csca =
                 trustedPartyService.getCertificate(cert.getCountry(), TrustedPartyEntity.CertificateType.CSCA).stream()
                     .map(trustedPartyService::getX509CertificateFromEntity)
-                    .filter(tp -> tp.getSubjectDN().equals(x509.getIssuerDN()))
+                    .filter(tp -> tp.getSubjectX500Principal().equals(x509.getIssuerX500Principal()))
                     .findFirst();
 
             if (csca.isPresent()) {
