@@ -381,7 +381,7 @@ The purpose of this document is to describe these changes.
 
 ### Technical Changes
 
-To support the did document feature according to the trust specification, the gateway will be enhanced by a did document generator and the capability to sign these did document. This contains a way to generate signing keys over a vault and register the public key of the signature over a decentralized key registry.
+To support the did document feature according to the [trust specification](https://github.com/WorldHealthOrganization/ddcc-trust/blob/main/TrustListSpecification.md#leading-contender-did-document), the gateway will be enhanced by a did document generator and the capability to sign these did document. This contains a way to generate signing keys over a vault and register the public key of the signature over a decentralized key registry.
 
 ![](pictures/architecture/TechnicalChanges.drawio.png)
 
