@@ -126,7 +126,7 @@ openssl req -x509 -newkey rsa:4096 -keyout key_ta.pem -out cert_ta.pem -days 365
 afterwards the PublicKey has to be exported in a Java KeyStore.
 
 ```
-keytool -importcert -alias dgcg_trust_anchor -file cert_ta.pem -keystore ta.jks -storepass dgcg-p4ssw0rd
+keytool -importcert -alias dgcg_trust_anchor -file cert_ta.pem -keystore ta.jks -storepass dgcg-p4ssw0rd -storetype jks
 ```
 
 Put the created ta.jks file in the "certs" directory of the gateway. If you are using the Docker image then this folder
@@ -345,7 +345,7 @@ The following channels are available for discussions, feedback, and support requ
 
 | Type               | Channel                                                |
 |--------------------| ------------------------------------------------------ |
-| **Gateway issues** | <a href="/../../issues" title="Open Issues"><img src="https://img.shields.io/github/issues/eu-digital-green-certificates/dgc-gateway?style=flat"></a>  |
+| **Gateway issues** | <a href="/../../issues" title="Open Issues"><img src="https://img.shields.io/github/issues/WorldHealthOrganization/ddcc-gateway?style=flat"></a>  |
 | **Other requests** | <a href="mailto:opensource@telekom.de" title="Email DGC Team"><img src="https://img.shields.io/badge/email-DGC%20team-green?logo=mail.ru&style=flat-square&logoColor=white"></a>   |
 
 ## How to contribute
