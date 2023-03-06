@@ -78,7 +78,7 @@ public class DgcConfigProperties {
             private String blobEndpoint;
             private String blobContainer;
             private String blobName;
-            private ProxyConfig proxy;
+            private ProxyConfig proxy = new ProxyConfig();
 
         }
     }
