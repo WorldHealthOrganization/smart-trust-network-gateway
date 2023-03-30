@@ -47,10 +47,11 @@ logged access.
 
 ### Prerequisites
 
-- OpenJDK 11 (with installed ```keytool``` CLI)
-- Maven
+- OpenJDK 17 (with installed ```keytool``` CLI)
+- Maven 3.9.1 or later
 - Authenticate
   to [Github Packages](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-apache-maven-registry)
+- Optionally: Docker (if following the docker part of the guide)
 
 #### Authenticating to GitHub Packages
 
