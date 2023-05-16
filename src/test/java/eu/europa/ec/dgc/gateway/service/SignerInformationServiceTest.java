@@ -20,8 +20,10 @@
 
 package eu.europa.ec.dgc.gateway.service;
 
+import eu.europa.ec.dgc.gateway.client.cloudmersive.CloudmersiveClient;
 import eu.europa.ec.dgc.gateway.entity.SignerInformationEntity;
 import eu.europa.ec.dgc.gateway.entity.TrustedPartyEntity;
+import eu.europa.ec.dgc.gateway.model.CloudmersiveThreatDetectionResponse;
 import eu.europa.ec.dgc.gateway.repository.SignerInformationRepository;
 import eu.europa.ec.dgc.gateway.testdata.CertificateTestUtils;
 import eu.europa.ec.dgc.gateway.testdata.DgcTestKeyStore;
@@ -35,9 +37,14 @@ import java.util.Optional;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 class SignerInformationServiceTest {
@@ -57,8 +64,18 @@ class SignerInformationServiceTest {
     @Autowired
     SignerInformationService signerInformationService;
 
+    @MockBean
+    CloudmersiveClient cloudmersiveClient;
+
     private static final String countryCode = "EU";
     private static final String dummySignature = "randomStringAsSignatureWhichIsNotValidatedInServiceLevel";
+
+    @BeforeEach
+    void setup() {
+        CloudmersiveThreatDetectionResponse threatResponse = new CloudmersiveThreatDetectionResponse();
+        threatResponse.setCleanResult(true);
+        when(cloudmersiveClient.detectThreatInString(any())).thenReturn(threatResponse);
+    }
 
     @AfterEach
     void cleanUp() {
