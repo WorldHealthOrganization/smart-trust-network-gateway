@@ -30,9 +30,14 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Base64;
@@ -81,7 +86,7 @@ public class CertificateAuthenticationFilter extends OncePerRequestFilter {
                 return true;
             } else {
                 return !((HandlerMethod) handlerExecutionChain.getHandler()).getMethod()
-                    .isAnnotationPresent(CertificateAuthenticationRequired.class);
+                        .isAnnotationPresent(CertificateAuthenticationRequired.class);
             }
         } catch (Exception e) {
             handlerExceptionResolver.resolveException(request, null, null, e);
@@ -103,7 +108,8 @@ public class CertificateAuthenticationFilter extends OncePerRequestFilter {
             isHexString = false;
         }
 
-        // We can assume that the given string is hex encoded SHA-256 hash when length is 64 and string is hex encoded
+        // We can assume that the given string is hex encoded SHA-256 hash when length
+        // is 64 and string is hex encoded
         if (inputString.length() == 64 && isHexString) {
             return inputString;
         } else {
@@ -121,51 +127,82 @@ public class CertificateAuthenticationFilter extends OncePerRequestFilter {
         }
     }
 
+    private static String bytesToHex(byte[] hash) {
+        StringBuilder hexString = new StringBuilder(2 * hash.length);
+        for (int i = 0; i < hash.length; i++) {
+            String hex = Integer.toHexString(0xff & hash[i]);
+            if (hex.length() == 1) {
+                hexString.append('0');
+            }
+            hexString.append(hex);
+        }
+        return hexString.toString();
+    }
+
     @Override
     protected void doFilterInternal(
-        HttpServletRequest httpServletRequest,
-        HttpServletResponse httpServletResponse,
-        FilterChain filterChain
-    ) throws ServletException, IOException {
+            HttpServletRequest httpServletRequest,
+            HttpServletResponse httpServletResponse,
+            FilterChain filterChain) throws ServletException, IOException {
         logger.debug("Checking request for auth headers or auth certificate");
 
         String certThumbprint;
         String certDistinguishedName;
+        String certPem;
 
         if (httpServletRequest.getUserPrincipal() != null) {
             log.debug("Found Client Certificate in request");
             certThumbprint = httpServletRequest.getUserPrincipal().getName();
 
-            PreAuthenticatedAuthenticationToken token =
-                (PreAuthenticatedAuthenticationToken) httpServletRequest.getUserPrincipal();
+            PreAuthenticatedAuthenticationToken token = (PreAuthenticatedAuthenticationToken) httpServletRequest
+                    .getUserPrincipal();
 
             X509Certificate certificate = (X509Certificate) token.getCredentials();
             certDistinguishedName = certificate.getSubjectX500Principal().toString();
         } else {
             log.debug("No Client Certificate found, using Request Headers");
 
-            certDistinguishedName =
-                httpServletRequest.getHeader(properties.getCertAuth().getHeaderFields().getDistinguishedName());
+            certDistinguishedName = httpServletRequest
+                    .getHeader(properties.getCertAuth().getHeaderFields().getDistinguishedName());
 
             certThumbprint = normalizeCertificateHash(
-                httpServletRequest.getHeader(properties.getCertAuth().getHeaderFields().getThumbprint()));
+                    httpServletRequest.getHeader(properties.getCertAuth().getHeaderFields().getThumbprint()));
+
+            certPem = normalizeCertificateHash(
+                    httpServletRequest.getHeader(properties.getCertAuth().getHeaderFields().getPem()));
         }
 
-        if (certDistinguishedName == null || certThumbprint == null) {
-            log.error("No thumbprint or distinguish name");
-            handlerExceptionResolver.resolveException(
-                httpServletRequest,
-                httpServletResponse,
-                null,
-                new DgcgResponseException(
-                    HttpStatus.UNAUTHORIZED,
-                    "0x400",
-                    "No thumbprint or distinguish name",
-                    "", ""));
-            return;
-        }
+        if (certPem == null) {
+            if (certDistinguishedName == null || certThumbprint == null) {
+                log.error("No thumbprint or distinguish name");
+                handlerExceptionResolver.resolveException(
+                        httpServletRequest,
+                        httpServletResponse,
+                        null,
+                        new DgcgResponseException(
+                                HttpStatus.UNAUTHORIZED,
+                                "0x400",
+                                "No thumbprint or distinguish name",
+                                "", ""));
+                return;
+            }
+            certDistinguishedName = URLDecoder.decode(certDistinguishedName, StandardCharsets.UTF_8);
+        } else {
+            certPem = URLDecoder.decode(certPem, StandardCharsets.UTF_8);
 
-        certDistinguishedName = URLDecoder.decode(certDistinguishedName, StandardCharsets.UTF_8);
+            try {
+                MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                InputStream stream = new ByteArrayInputStream(certPem.getBytes(StandardCharsets.UTF_8));
+                CertificateFactory factory = CertificateFactory.getInstance("X.509");
+                X509Certificate cert = (X509Certificate) factory.generateCertificate(stream);
+
+                certDistinguishedName = cert.getIssuerX500Principal().getName();
+                certThumbprint = bytesToHex(digest.digest(cert.getEncoded()));
+
+            } catch (Exception e) {
+                log.error("Error in PEM Parsing " + e.getMessage());
+            }
+        }
 
         DgcMdc.put("dnString", certDistinguishedName);
         DgcMdc.put("thumbprint", certThumbprint);
@@ -175,42 +212,41 @@ public class CertificateAuthenticationFilter extends OncePerRequestFilter {
         if (!distinguishNameMap.containsKey("C")) {
             log.error("Country property is missing");
             handlerExceptionResolver.resolveException(
-                httpServletRequest, httpServletResponse, null,
-                new DgcgResponseException(
-                    HttpStatus.BAD_REQUEST,
-                    "0x401",
-                    "Client Certificate must contain country property",
-                    certDistinguishedName, ""));
+                    httpServletRequest, httpServletResponse, null,
+                    new DgcgResponseException(
+                            HttpStatus.BAD_REQUEST,
+                            "0x401",
+                            "Client Certificate must contain country property",
+                            certDistinguishedName, ""));
             return;
         }
 
         Optional<TrustedPartyEntity> certFromDb = trustedPartyService.getCertificate(
-            certThumbprint,
-            distinguishNameMap.get("C"),
-            TrustedPartyEntity.CertificateType.AUTHENTICATION
-        );
+                certThumbprint,
+                distinguishNameMap.get("C"),
+                TrustedPartyEntity.CertificateType.AUTHENTICATION);
 
         if (certFromDb.isEmpty()) {
             log.error("Unknown client certificate");
             handlerExceptionResolver.resolveException(
-                httpServletRequest, httpServletResponse, null,
-                new DgcgResponseException(
-                    HttpStatus.UNAUTHORIZED,
-                    "0x402",
-                    "Client is not authorized to access the service",
-                    "", ""));
+                    httpServletRequest, httpServletResponse, null,
+                    new DgcgResponseException(
+                            HttpStatus.UNAUTHORIZED,
+                            "0x402",
+                            "Client is not authorized to access the service",
+                            "", ""));
 
             return;
         } else if (certFromDb.get().getSourceGateway() != null) {
             log.error("Client Certificate is federated.");
             handlerExceptionResolver.resolveException(
-                httpServletRequest, httpServletResponse, null,
-                new DgcgResponseException(
-                    HttpStatus.UNAUTHORIZED,
-                    "0x402",
-                    "Client is not authorized to access the service",
-                    "", "Certificate is federated. "
-                    + "Only certificates onboarded on this Gateway are allowed to authenticate"));
+                    httpServletRequest, httpServletResponse, null,
+                    new DgcgResponseException(
+                            HttpStatus.UNAUTHORIZED,
+                            "0x402",
+                            "Client is not authorized to access the service",
+                            "", "Certificate is federated. "
+                                    + "Only certificates onboarded on this Gateway are allowed to authenticate"));
 
             return;
         }
@@ -218,12 +254,12 @@ public class CertificateAuthenticationFilter extends OncePerRequestFilter {
         if (!checkRequiredRoles(httpServletRequest, certFromDb.get())) {
             log.error("Missing permissions to access this endpoint.");
             handlerExceptionResolver.resolveException(
-                httpServletRequest, httpServletResponse, null,
-                new DgcgResponseException(
-                    HttpStatus.FORBIDDEN,
-                    "0x403",
-                    "Client is not authorized to access the endpoint",
-                    "", ""));
+                    httpServletRequest, httpServletResponse, null,
+                    new DgcgResponseException(
+                            HttpStatus.FORBIDDEN,
+                            "0x403",
+                            "Client is not authorized to access the endpoint",
+                            "", ""));
 
             return;
         }
@@ -250,7 +286,7 @@ public class CertificateAuthenticationFilter extends OncePerRequestFilter {
         }
 
         CertificateAuthenticationRole[] requiredRoles = ((HandlerMethod) handlerExecutionChain.getHandler())
-            .getMethod().getAnnotation(CertificateAuthenticationRequired.class).requiredRoles();
+                .getMethod().getAnnotation(CertificateAuthenticationRequired.class).requiredRoles();
 
         if (requiredRoles.length == 0) {
             log.debug("Endpoint requires no special roles.");
@@ -268,15 +304,16 @@ public class CertificateAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Parses a given Distinguish Name string (e.g. "C=DE,OU=Test Unit,O=Test Company").
+     * Parses a given Distinguish Name string (e.g. "C=DE,OU=Test Unit,O=Test
+     * Company").
      *
      * @param dnString the DN string to parse.
      * @return Map with properties of the DN string.
      */
     private Map<String, String> parseDistinguishNameString(String dnString) {
         return Arrays.stream(dnString.split(","))
-            .map(part -> part.split("="))
-            .filter(entry -> entry.length == 2)
-            .collect(Collectors.toMap(arr -> arr[0].toUpperCase().trim(), arr -> arr[1].trim(), (s, s2) -> s));
+                .map(part -> part.split("="))
+                .filter(entry -> entry.length == 2)
+                .collect(Collectors.toMap(arr -> arr[0].toUpperCase().trim(), arr -> arr[1].trim(), (s, s2) -> s));
     }
 }

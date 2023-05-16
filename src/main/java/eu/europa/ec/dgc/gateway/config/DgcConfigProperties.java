@@ -128,6 +128,7 @@ public class DgcConfigProperties {
         public static class HeaderFields {
             private String thumbprint;
             private String distinguishedName;
+            private String pem;
         }
     }
 
