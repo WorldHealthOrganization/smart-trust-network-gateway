@@ -164,7 +164,7 @@ public class SignerInformationService {
         String domain,
         Map<String, String> properties
     ) throws SignerCertCheckException {
-
+        //TODO additional check of certificate information with cloudmersive threat detection api
         contentCheckUploaderCertificate(signerCertificate, authenticatedCountryCode);
         if (group == null || group.equals("DSC")) {
             contentCheckCountryOfOrigin(uploadedCertificate, authenticatedCountryCode);

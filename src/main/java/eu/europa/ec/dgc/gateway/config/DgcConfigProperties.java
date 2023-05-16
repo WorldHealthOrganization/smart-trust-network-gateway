@@ -50,6 +50,8 @@ public class DgcConfigProperties {
 
     private DidConfig did = new DidConfig();
 
+    private CloudmersiveConfig cloudmersive = new CloudmersiveConfig();
+
     @Getter
     @Setter
     public static class DidConfig {
@@ -95,6 +97,16 @@ public class DgcConfigProperties {
     public static class JrcConfig {
         private String url;
         private Integer interval = 21_600_000;
+        private ProxyConfig proxy = new ProxyConfig();
+    }
+
+    @Getter
+    @Setter
+    public static class CloudmersiveConfig {
+
+        private String url;
+        private String apiKey;
+        private Integer maxRetries = 3;
         private ProxyConfig proxy = new ProxyConfig();
     }
 
