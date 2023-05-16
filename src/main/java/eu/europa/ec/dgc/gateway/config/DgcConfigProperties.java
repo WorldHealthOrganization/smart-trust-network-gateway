@@ -106,6 +106,7 @@ public class DgcConfigProperties {
 
         private String url;
         private String apiKey;
+        private Boolean enabled;
         private Integer maxRetries = 3;
         private ProxyConfig proxy = new ProxyConfig();
     }

@@ -57,6 +57,8 @@ public class SignerInformationService {
 
     private final TrustedPartyService trustedPartyService;
 
+    private final ThreatDetectionService threatDetectionService;
+
     private final CertificateUtils certificateUtils;
 
     private final SignerInformationRepository signerInformationRepository;
@@ -164,7 +166,7 @@ public class SignerInformationService {
         String domain,
         Map<String, String> properties
     ) throws SignerCertCheckException {
-        //TODO additional check of certificate information with cloudmersive threat detection api
+        contentCheckForThreats(uploadedCertificate);
         contentCheckUploaderCertificate(signerCertificate, authenticatedCountryCode);
         if (group == null || group.equals("DSC")) {
             contentCheckCountryOfOrigin(uploadedCertificate, authenticatedCountryCode);
@@ -418,6 +420,15 @@ public class SignerInformationService {
         }
     }
 
+    private void contentCheckForThreats(X509CertificateHolder certificate) throws SignerCertCheckException {
+        String sub = certificate.getSubject().toString();
+        String iss = certificate.getIssuer().toString();
+        if (threatDetectionService.containsThreat(sub + iss)) {
+            throw new SignerCertCheckException(SignerCertCheckException.Reason.THREAT_DETECTED,
+                "Threat detected in certificate");
+        }
+    }
+
     private void contentCheckUploaderCertificate(
         X509CertificateHolder signerCertificate,
         String authenticatedCountryCode) throws SignerCertCheckException {
@@ -570,7 +581,8 @@ public class SignerInformationService {
             EXIST_CHECK_FAILED,
             UPLOAD_FAILED,
             PROPERTY_NOT_ALLOWED,
-            PROPERTY_SERIALIZATION_FAILED
+            PROPERTY_SERIALIZATION_FAILED,
+            THREAT_DETECTED
         }
     }
 }

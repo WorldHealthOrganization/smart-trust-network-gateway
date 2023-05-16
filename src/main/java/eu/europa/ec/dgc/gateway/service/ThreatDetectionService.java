@@ -1,6 +1,7 @@
 package eu.europa.ec.dgc.gateway.service;
 
 import eu.europa.ec.dgc.gateway.client.cloudmersive.CloudmersiveClient;
+import eu.europa.ec.dgc.gateway.config.DgcConfigProperties;
 import eu.europa.ec.dgc.gateway.model.CloudmersiveThreatDetectionResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +14,8 @@ public class ThreatDetectionService {
 
     private final CloudmersiveClient cloudmersiveClient;
 
+    private final DgcConfigProperties configProperties;
+
     /**
      * Detects threats in a string content using cloudmersive service.
      * @param content string content to be checked
@@ -20,6 +23,10 @@ public class ThreatDetectionService {
      */
     public boolean containsThreat(String content) {
         log.info("ThreatDetectionService.detectThreatInString: {}", content);
+
+        if (Boolean.FALSE.equals(configProperties.getCloudmersive().getEnabled())) {
+            return false;
+        }
 
         CloudmersiveThreatDetectionResponse cloudMersiveResponse = cloudmersiveClient.detectThreatInString(content);
         if (cloudMersiveResponse == null) {

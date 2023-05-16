@@ -10,7 +10,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 
 import static org.mockito.Mockito.when;
 
-@SpringBootTest
+@SpringBootTest(properties = {"dgc.cloudmersive.enabled=true"})
 public class ThreatDetectionServiceTest {
 
     @MockBean
