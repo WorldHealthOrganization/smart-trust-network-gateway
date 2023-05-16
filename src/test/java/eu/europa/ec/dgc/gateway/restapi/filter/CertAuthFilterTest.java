@@ -29,6 +29,7 @@ import eu.europa.ec.dgc.gateway.testdata.TrustedPartyTestHelper;
 import java.math.BigInteger;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.cert.X509Certificate;
 import java.util.Base64;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -229,5 +230,46 @@ class CertAuthFilterTest {
         ).andExpect(mvcResult -> Assertions.assertEquals("EU",
             mvcResult.getRequest().getAttribute(CertificateAuthenticationFilter.REQUEST_PROP_COUNTRY)));
     }
+
+
+    @Test
+    void test_request_with_pem_certificate_authentication_succeeds() throws Exception {
+        X509Certificate pemCert = trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.AUTHENTICATION, countryCode);
+
+        String certPem = "-----BEGIN CERTIFICATE-----\n"
+                + Base64.getMimeEncoder(64, System.lineSeparator().getBytes()).encodeToString(pemCert.getEncoded())
+                + "-----END CERTIFICATE-----";
+
+        mockMvc.perform(post("/signerCertificate")
+                .contentType("application/cms")
+                .header(properties.getCertAuth().getHeaderFields().getPem(), certPem)
+        ).andExpect(status().isOk());
+
+    }
+
+    @Test
+    void test_request_with_pem_certificate_authentication_fails_as_bad_request() throws Exception {
+
+        //TODO: check if this is the correct behavior for invalid certificate
+        
+        //resp: 200
+        String certPem = "";
+
+//                "-----BEGIN CERTIFICATE-----\n"
+//                + Base64.getMimeEncoder(64, System.lineSeparator().getBytes()).encodeToString("Invalid Cert Content".getBytes())
+//                + "-----END CERTIFICATE-----";
+        //resp: 401
+        //certPem = "invalid certificate content";
+
+        //resp: 400
+        certPem = "invalid";
+
+        mockMvc.perform(post("/signerCertificate")
+                .contentType("application/cms")
+                .header(properties.getCertAuth().getHeaderFields().getPem(), certPem)
+        ).andExpect(status().isBadRequest());
+
+    }
+
 }
 

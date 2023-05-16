@@ -148,7 +148,7 @@ public class CertificateAuthenticationFilter extends OncePerRequestFilter {
 
         String certThumbprint;
         String certDistinguishedName;
-        String certPem;
+        String certPem = null;
 
         if (httpServletRequest.getUserPrincipal() != null) {
             log.debug("Found Client Certificate in request");
