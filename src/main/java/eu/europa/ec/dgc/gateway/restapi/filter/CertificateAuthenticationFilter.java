@@ -201,6 +201,14 @@ public class CertificateAuthenticationFilter extends OncePerRequestFilter {
 
             } catch (Exception e) {
                 log.error("Error in PEM Parsing " + e.getMessage());
+                handlerExceptionResolver.resolveException(
+                        httpServletRequest, httpServletResponse, null,
+                        new DgcgResponseException(
+                                HttpStatus.BAD_REQUEST,
+                                "0x405",
+                                "Client Certificate Header could not be parsed.",
+                                certDistinguishedName, ""));
+                return;
             }
         }
 
