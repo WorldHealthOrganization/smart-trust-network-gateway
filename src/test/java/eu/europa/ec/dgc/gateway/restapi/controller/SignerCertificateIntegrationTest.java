@@ -20,12 +20,16 @@
 
 package eu.europa.ec.dgc.gateway.restapi.controller;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import eu.europa.ec.dgc.gateway.client.cloudmersive.CloudmersiveClient;
 import eu.europa.ec.dgc.gateway.config.DgcConfigProperties;
 import eu.europa.ec.dgc.gateway.entity.SignerInformationEntity;
 import eu.europa.ec.dgc.gateway.entity.TrustedPartyEntity;
+import eu.europa.ec.dgc.gateway.model.CloudmersiveThreatDetectionResponse;
 import eu.europa.ec.dgc.gateway.repository.AuditEventRepository;
 import eu.europa.ec.dgc.gateway.repository.SignerInformationRepository;
 import eu.europa.ec.dgc.gateway.testdata.CertificateTestUtils;
@@ -41,12 +45,11 @@ import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.Optional;
 import org.bouncycastle.cert.X509CertificateHolder;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
@@ -70,11 +73,22 @@ class SignerCertificateIntegrationTest {
 
     @Autowired
     AuditEventRepository auditEventRepository;
+
+    @MockBean
+    CloudmersiveClient cloudmersiveClient;
+
     @Autowired
     private MockMvc mockMvc;
 
     private static final String countryCode = "EU";
     private static final String authCertSubject = "C=" + countryCode;
+
+    @BeforeEach
+    void setup() {
+        CloudmersiveThreatDetectionResponse threatResponse = new CloudmersiveThreatDetectionResponse();
+        threatResponse.setCleanResult(true);
+        when(cloudmersiveClient.detectThreatInString(any())).thenReturn(threatResponse);
+    }
 
     @AfterEach
     public void cleanUp() {
