@@ -233,43 +233,57 @@ class CertAuthFilterTest {
 
 
     @Test
-    void test_request_with_pem_certificate_authentication_succeeds() throws Exception {
-        X509Certificate pemCert = trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.AUTHENTICATION, countryCode);
+    void testRequestWithPemCertificateAuthenticationSucceeds() throws Exception {
+        X509Certificate certificate =
+            trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.AUTHENTICATION, countryCode);
 
-        String certPem = "-----BEGIN CERTIFICATE-----\n"
-                + Base64.getMimeEncoder(64, System.lineSeparator().getBytes()).encodeToString(pemCert.getEncoded())
-                + "-----END CERTIFICATE-----";
+        Base64.Encoder base64Encoder = Base64.getMimeEncoder(64, "\n".getBytes());
+
+        String certPem = "-----BEGIN CERTIFICATE-----"
+            + "\n"
+            + base64Encoder.encodeToString(certificate.getEncoded())
+            + "\n"
+            + "-----END CERTIFICATE-----";
+
+        certPem = URLEncoder.encode(certPem, StandardCharsets.UTF_8);
+        certPem = certPem.replaceAll("\\+", "%20");
 
         mockMvc.perform(post("/signerCertificate")
-                .contentType("application/cms")
-                .header(properties.getCertAuth().getHeaderFields().getPem(), certPem)
-        ).andExpect(status().isOk());
+            .contentType("application/cms")
+            .header(properties.getCertAuth().getHeaderFields().getPem(), certPem)
+        ).andExpect(mvcResult -> {
+            Assertions.assertEquals(countryCode,
+                mvcResult.getRequest().getAttribute(CertificateAuthenticationFilter.REQUEST_PROP_COUNTRY));
+            Assertions.assertEquals(
+                trustedPartyTestHelper.getHash(TrustedPartyEntity.CertificateType.AUTHENTICATION, countryCode),
+                mvcResult.getRequest().getAttribute(CertificateAuthenticationFilter.REQUEST_PROP_THUMBPRINT)
+            );
+        });
 
     }
 
     @Test
-    void test_request_with_pem_certificate_authentication_fails_as_bad_request() throws Exception {
+    void test_request_with_pem_certificate_authentication_fails_as_unauthorized() throws Exception {
+        String certPem = "-----BEGIN CERTIFICATE-----"
+            + "\n"
+            + "blablabla"
+            + "\n"
+            + "-----END CERTIFICATE-----";
 
-        //TODO: check if this is the correct behavior for invalid certificate
-        
-        //resp: 200
-        String certPem = "";
-
-//                "-----BEGIN CERTIFICATE-----\n"
-//                + Base64.getMimeEncoder(64, System.lineSeparator().getBytes()).encodeToString("Invalid Cert Content".getBytes())
-//                + "-----END CERTIFICATE-----";
-        //resp: 401
-        //certPem = "invalid certificate content";
-
-        //resp: 400
-        certPem = "invalid";
+        certPem = URLEncoder.encode(certPem, StandardCharsets.UTF_8);
+        certPem = certPem.replaceAll("\\+", "%20");
 
         mockMvc.perform(post("/signerCertificate")
-                .contentType("application/cms")
-                .header(properties.getCertAuth().getHeaderFields().getPem(), certPem)
-        ).andExpect(status().isBadRequest());
-
+            .contentType("application/cms")
+            .header(properties.getCertAuth().getHeaderFields().getPem(), certPem)
+        ).andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void test_request_without_any_auth_iformation_should_fail() throws Exception {
+        mockMvc.perform(post("/signerCertificate")
+            .contentType("application/cms")
+        ).andExpect(status().isUnauthorized());
+    }
 }
 
