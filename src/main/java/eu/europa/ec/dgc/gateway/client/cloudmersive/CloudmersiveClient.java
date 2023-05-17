@@ -42,7 +42,6 @@ public interface CloudmersiveClient {
     @PostMapping(value = "/security/threat-detection/content/automatic/detect/string",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    //@Headers("Apikey: ${dgc.cloudmersive.apiKey}")
     @Valid
     CloudmersiveThreatDetectionResponse detectThreatInString(String originalInput);
 }
