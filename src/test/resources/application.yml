@@ -38,6 +38,7 @@ dgc:
     header-fields:
       thumbprint: X-SSL-Client-SHA256
       distinguished-name: X-SSL-Client-DN
+      pem: X-SSL-Client-Cert
   did:
     enableDidGeneration: true
     didId: a
