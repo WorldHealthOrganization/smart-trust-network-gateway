@@ -21,7 +21,6 @@ public class CloudmersiveClientTest {
 
 
         CloudmersiveThreatDetectionResponse cloudmersiveThreatDetectionResponse = cloudmersiveClient.detectThreatInString(threatContent);
-        System.out.println(cloudmersiveThreatDetectionResponse.toString());
         Assertions.assertFalse(cloudmersiveThreatDetectionResponse.getCleanResult());
     }
 
