@@ -39,7 +39,7 @@ the necessary public keys beforehand (offline verification).
 
 # Context View
 
-The diagram below shows the api endpoints from the DGC Gateway and the dataflow from and to national backends.
+The diagram below shows the api endpoints of the gateway and the dataflow from and to national backends.
 ![Data Flow View](pictures/software-design/DGCG-Overview.png "API Overview")
 National Health Authorities acting the certificate management process.
 
