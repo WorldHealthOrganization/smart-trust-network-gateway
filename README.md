@@ -1,5 +1,5 @@
 <h1 align="center">
-   DDCC Gateway
+   Trust Network Gateway (TNG)
 </h1>
 
 <p align="center">
@@ -32,9 +32,9 @@
 
 ## About
 
-This repository contains the source code of the DDCC Gateway.
+This repository contains the source code of the Trust Network Gateway (TNG) (formerly known as DDCC Gateway).
 
-DGCG is used to share business rules, value sets, validation and verification information across all national backend servers. By using DDCCG,
+TNG is used to share business rules, value sets, validation and verification information across all national backend servers. By using TNG,
 backend-to-backend integration is facilitated, and countries and regions can onboard incrementally, while the national backends
 retain flexibility and can control data processing of their users.
 
@@ -130,14 +130,14 @@ afterwards the PublicKey has to be exported in a Java KeyStore.
 keytool -importcert -alias dgcg_trust_anchor -file cert_ta.pem -keystore ta.jks -storepass dgcg-p4ssw0rd -storetype jks
 ```
 
-Put the created ta.jks file in the "certs" directory of dgc-gateway. If you are using the Docker image then this folder
+Put the created ta.jks file in the "certs" directory of the gateway. If you are using the Docker image then this folder
 must
 be in the root directory of your local workspace (on the same level as this readme file). Create directory it does not
 already exist.
 
 #### Create Database
 
-DGC Gateway needs a database to persist data. For local deployment a MySQL is recommended. A MySQL DB will be started
+The gateway needs a database to persist data. For local deployment a MySQL is recommended. A MySQL DB will be started
 when docker-compose file is started, so no additional tasks are required.
 
 #### Start Gateway
@@ -159,7 +159,7 @@ Docker-for-Windows.
 
 #### Insert Trusted Parties
 
-The data structure in the database should be now be created by DGC Gateway. In order to access the DGC Gateway it is
+The data structure in the database should be now be created by the gateway. In order to access the the gateway it is
 required to onboard some certificates. You will need AUTHENTICATION, UPLOAD and CSCA certificates.
 
 The certificates can be created with OpenSSL:
@@ -303,7 +303,7 @@ and `docker cp [CONTAINER_ID]:/logs/dgcg.log .` to copy the log file to the curr
 
 #### Send requests
 
-DGC Gateway does not do any mTLS termination. To simulate the LoadBalancer on your local deployment you have to send
+The gateway does not do any mTLS termination. To simulate the LoadBalancer on your local deployment you have to send
 HTTP requests to the gateway and set two HTTP-Headers:
 
 X-SSL-Client-SHA256: Containing the SHA-256 Hash of the AUTHENTICATION certificate (thumbprint from dgc ta command
@@ -314,8 +314,7 @@ Property, e.g. C=EU)
 #### Coverting the certificate/private key into PKCS12
 
 Windows users may wish to convert their certificate/private keys into a PKCS12 package so that it can be imported into
-the
-machine's certificate store. Thankfully that is pretty simple using openssl.
+the machine's certificate store. Thankfully that is pretty simple using openssl.
 
 For example to convert the test authentication certificate created earlier:
 
@@ -329,15 +328,15 @@ For example to convert the test authentication certificate created earlier:
 
 The latest OpenAPI specification can always be found here: https://eu-digital-green-certificates.github.io/dgc-gateway/
 
-It is also possible to access OpenAPI when DGC Gateway is deployed on your local computer when Spring-Profile "dev" or "
+It is also possible to access OpenAPI when the gateway is deployed on your local computer when Spring-Profile "dev" or "
 local" is enabled. In order to set authentication headers for authentication without a mTLS terminating LoadBalancer at
-least the profile "local"
-should be enabled. Then both headers can be set in Swagger UI.
+least the profile "local" should be enabled. Then both headers can be set in Swagger UI.
 
 http://localhost:8090/swagger-ui/index.html
 
 ### Other Documentation
 
+* [Architecture](docs/Architecture.md) 
 * [Software Design](docs/software-design-dgc-gateway.md)
 * [Onboarding Document](https://github.com/eu-digital-green-certificates/dgc-participating-countries/blob/main/gateway/OnboardingChecklist.md)
 
@@ -345,12 +344,10 @@ http://localhost:8090/swagger-ui/index.html
 
 The following channels are available for discussions, feedback, and support requests:
 
-| Type       | Channel                                                                                                                                                                          |
-|------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Gateway  |                                                                                                                                                                                  |
-| issues**   | <a href="/../../issues" title="Open Issues"><img src="https://img.shields.io/github/issues/eu-digital-green-certificates/dgc-gateway?style=flat"></a>                            |
-| **Other    |                                                                                                                                                                                  |
-| requests** | <a href="mailto:opensource@telekom.de" title="Email DGC Team"><img src="https://img.shields.io/badge/email-DGC%20team-green?logo=mail.ru&style=flat-square&logoColor=white"></a> |
+| Type               | Channel                                                |
+|--------------------| ------------------------------------------------------ |
+| **Gateway issues** | <a href="/../../issues" title="Open Issues"><img src="https://img.shields.io/github/issues/WorldHealthOrganization/ddcc-gateway?style=flat"></a>  |
+| **Other requests** | <a href="mailto:opensource@telekom.de" title="Email DGC Team"><img src="https://img.shields.io/badge/email-DGC%20team-green?logo=mail.ru&style=flat-square&logoColor=white"></a>   |
 
 ## How to contribute
 

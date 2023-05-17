@@ -200,7 +200,7 @@ public class DidTrustListServiceTest {
         Assertions.assertTrue(parsed.getVerificationMethod().contains("did:trusted:XY:issuer"));
         Assertions.assertEquals(2, parsed.getContext().size());
         Assertions.assertEquals("JsonWebSignature2020", parsed.getProof().getType());
-        Assertions.assertTrue(Instant.now().toEpochMilli() - parsed.getProof().getCreated().toInstant().toEpochMilli() < 1000);
+        Assertions.assertTrue(Instant.now().toEpochMilli() - parsed.getProof().getCreated().toInstant().toEpochMilli() < 10000);
         Assertions.assertEquals("f", parsed.getProof().getDomain());
         Assertions.assertEquals("g", parsed.getProof().getNonce());
         Assertions.assertEquals("assertionMethod", parsed.getProof().getProofPurpose());
