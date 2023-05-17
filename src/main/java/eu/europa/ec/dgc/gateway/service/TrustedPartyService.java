@@ -67,7 +67,7 @@ public class TrustedPartyService {
      */
     public List<TrustedPartyEntity> getNonFederatedTrustedParties() {
 
-        return trustedPartyRepository.getBySourceGatewayIsNull()
+        return trustedPartyRepository.getBySourceGatewayIsNullAndDomainIs("DCC")
             .stream()
             .filter(this::validateCertificateIntegrity)
             .collect(Collectors.toList());
@@ -81,7 +81,7 @@ public class TrustedPartyService {
      */
     public List<TrustedPartyEntity> getNonFederatedTrustedParties(TrustedPartyEntity.CertificateType type) {
 
-        return trustedPartyRepository.getByCertificateTypeAndSourceGatewayIsNull(type)
+        return trustedPartyRepository.getByCertificateTypeAndSourceGatewayIsNullAndDomainIs(type, "DCC")
             .stream()
             .filter(this::validateCertificateIntegrity)
             .collect(Collectors.toList());

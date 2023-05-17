@@ -30,11 +30,12 @@ import org.springframework.data.repository.query.Param;
 
 public interface TrustedPartyRepository extends JpaRepository<TrustedPartyEntity, Long> {
 
-    List<TrustedPartyEntity> getBySourceGatewayIsNull();
+    List<TrustedPartyEntity> getBySourceGatewayIsNullAndDomainIs(String domain);
 
     List<TrustedPartyEntity> getByCountryAndCertificateType(String country, TrustedPartyEntity.CertificateType type);
 
-    List<TrustedPartyEntity> getByCertificateTypeAndSourceGatewayIsNull(TrustedPartyEntity.CertificateType type);
+    List<TrustedPartyEntity> getByCertificateTypeAndSourceGatewayIsNullAndDomainIs(
+        TrustedPartyEntity.CertificateType type, String domain);
 
     Optional<TrustedPartyEntity> getFirstByThumbprintAndCountryAndCertificateType(
         String thumbprint, String country, TrustedPartyEntity.CertificateType type);
