@@ -30,7 +30,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface SignerInformationRepository extends JpaRepository<SignerInformationEntity, Long> {
 
-    List<SignerInformationEntity> getAllBySourceGatewayIsNull();
+    List<SignerInformationEntity> getAllBySourceGatewayIsNullAndDomainIs(String domain);
 
     @Query("SELECT s FROM SignerInformationEntity s WHERE "
         + "(:ignoreGroup = true OR s.certificateType IN (:group)) AND "
@@ -67,11 +67,11 @@ public interface SignerInformationRepository extends JpaRepository<SignerInforma
     @Transactional
     void deleteByThumbprint(String thumbprint);
 
-    List<SignerInformationEntity> getByCertificateTypeAndSourceGatewayIsNull(
-        SignerInformationEntity.CertificateType type);
+    List<SignerInformationEntity> getByCertificateTypeAndSourceGatewayIsNullAndDomainIs(
+        SignerInformationEntity.CertificateType type, String domain);
 
-    List<SignerInformationEntity> getByCertificateTypeAndCountryAndSourceGatewayIsNull(
-        SignerInformationEntity.CertificateType type, String countryCode);
+    List<SignerInformationEntity> getByCertificateTypeAndCountryAndSourceGatewayIsNullAndDomainIs(
+        SignerInformationEntity.CertificateType type, String countryCode, String domain);
 
     @Transactional
     Long deleteBySourceGatewayGatewayId(String gatewayId);

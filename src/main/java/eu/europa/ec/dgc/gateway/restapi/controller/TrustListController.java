@@ -99,12 +99,12 @@ public class TrustListController {
             @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEMA_HASH),
             @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEMA_DISTINGUISH_NAME)
         },
-        summary = "Returns the full list of trusted certificates.",
+        summary = "Returns the list of trusted certificates of domain DCC.",
         tags = {"Trust Lists"},
         responses = {
             @ApiResponse(
                 responseCode = "200",
-                description = "Returns the full list of trusted parties.",
+                description = "Properties sourceGateway, uuid, domain and version are not present",
                 content = @Content(
                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                     array = @ArraySchema(schema = @Schema(implementation = TrustListDto.class)))),
@@ -139,7 +139,7 @@ public class TrustListController {
             @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEMA_HASH),
             @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEMA_DISTINGUISH_NAME)
         },
-        summary = "Returns a filtered list of trusted certificates.",
+        summary = "Returns a filtered list of trusted certificates of domain DCC.",
         tags = {"Trust Lists"},
         parameters = {
             @Parameter(
@@ -152,7 +152,7 @@ public class TrustListController {
         responses = {
             @ApiResponse(
                 responseCode = "200",
-                description = "Returns a filtered list of trusted certificates.",
+                description = "Properties sourceGateway, uuid, domain and version are not present",
                 content = @Content(
                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                     array = @ArraySchema(schema = @Schema(implementation = TrustListDto.class)))),
@@ -200,7 +200,7 @@ public class TrustListController {
             @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEMA_HASH),
             @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEMA_DISTINGUISH_NAME)
         },
-        summary = "Returns a filtered list of trusted certificates.",
+        summary = "Returns a filtered list of trusted certificates of domain DCC.",
         tags = {"Trust Lists"},
         parameters = {
             @Parameter(
@@ -219,7 +219,7 @@ public class TrustListController {
         responses = {
             @ApiResponse(
                 responseCode = "200",
-                description = "Returns a filtered list of trusted certificates.",
+                description = "Properties sourceGateway, uuid, domain and version are not present",
                 content = @Content(
                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                     array = @ArraySchema(schema = @Schema(implementation = TrustListDto.class)))),
