@@ -74,7 +74,7 @@ public class SignerInformationService {
      * @return List of SignerInformation
      */
     public List<SignerInformationEntity> getNonFederatedSignerInformation() {
-        return signerInformationRepository.getAllBySourceGatewayIsNull();
+        return signerInformationRepository.getAllBySourceGatewayIsNullAndDomainIs("DCC");
     }
 
     /**
@@ -85,7 +85,7 @@ public class SignerInformationService {
      */
     public List<SignerInformationEntity> getNonFederatedSignerInformation(
         SignerInformationEntity.CertificateType type) {
-        return signerInformationRepository.getByCertificateTypeAndSourceGatewayIsNull(type);
+        return signerInformationRepository.getByCertificateTypeAndSourceGatewayIsNullAndDomainIs(type, "DCC");
     }
 
     /**
@@ -98,7 +98,8 @@ public class SignerInformationService {
     public List<SignerInformationEntity> getNonFederatedSignerInformation(
         String countryCode,
         SignerInformationEntity.CertificateType type) {
-        return signerInformationRepository.getByCertificateTypeAndCountryAndSourceGatewayIsNull(type, countryCode);
+        return signerInformationRepository.getByCertificateTypeAndCountryAndSourceGatewayIsNullAndDomainIs(type,
+            countryCode, "DCC");
     }
 
     /**

@@ -11,8 +11,8 @@ ThirdParty Licenses
 
 | Dependency | License |
 | --- | --- |
-| ch.qos.logback:logback-classic:1.4.5 | Eclipse Public License - v 1.0 GNU Lesser General Public License |
-| ch.qos.logback:logback-core:1.4.5 | Eclipse Public License - v 1.0 GNU Lesser General Public License |
+| ch.qos.logback:logback-classic:1.4.6 | Eclipse Public License - v 1.0 GNU Lesser General Public License |
+| ch.qos.logback:logback-core:1.4.6 | Eclipse Public License - v 1.0 GNU Lesser General Public License |
 | com.apicatalog:titanium-json-ld:1.1.0 | Apache License, Version 2.0 |
 | com.azure:azure-core:1.34.0 | The MIT License (MIT) |
 | com.azure:azure-core-http-netty:1.12.7 | The MIT License (MIT) |
@@ -24,16 +24,16 @@ ThirdParty Licenses
 | com.damnhandy:handy-uri-templates:2.1.8 | The Apache Software License, Version 2.0 |
 | com.danubetech:key-formats-java:1.2.0 | Unknown license |
 | com.fasterxml:classmate:1.5.1 | Apache License, Version 2.0 |
-| com.fasterxml.jackson.core:jackson-annotations:2.14.1 | The Apache Software License, Version 2.0 |
-| com.fasterxml.jackson.core:jackson-core:2.14.1 | The Apache Software License, Version 2.0 |
-| com.fasterxml.jackson.core:jackson-databind:2.14.1 | The Apache Software License, Version 2.0 |
-| com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.14.1 | The Apache Software License, Version 2.0 |
-| com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.14.1 | The Apache Software License, Version 2.0 |
-| com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.14.1 | The Apache Software License, Version 2.0 |
-| com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.14.1 | The Apache Software License, Version 2.0 |
-| com.fasterxml.jackson.module:jackson-module-parameter-names:2.14.1 | The Apache Software License, Version 2.0 |
+| com.fasterxml.jackson.core:jackson-annotations:2.14.2 | The Apache Software License, Version 2.0 |
+| com.fasterxml.jackson.core:jackson-core:2.14.2 | The Apache Software License, Version 2.0 |
+| com.fasterxml.jackson.core:jackson-databind:2.14.2 | The Apache Software License, Version 2.0 |
+| com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.14.2 | The Apache Software License, Version 2.0 |
+| com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.14.2 | The Apache Software License, Version 2.0 |
+| com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.14.2 | The Apache Software License, Version 2.0 |
+| com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.14.2 | The Apache Software License, Version 2.0 |
+| com.fasterxml.jackson.module:jackson-module-parameter-names:2.14.2 | The Apache Software License, Version 2.0 |
 | com.fasterxml.woodstox:woodstox-core:6.4.0 | The Apache License, Version 2.0 |
-| com.github.everit-org.json-schema:org.everit.json.schema:1.14.1 | Apache License, Version 2.0 |
+| com.github.everit-org.json-schema:org.everit.json.schema:1.14.2 | Apache License, Version 2.0 |
 | com.github.jnr:jffi:1.2.9 | The Apache Software License, Version 2.0 |
 | com.github.jnr:jnr-ffi:2.0.5 | The Apache Software License, Version 2.0 |
 | com.github.jnr:jnr-x86asm:1.0.2 | MIT License |
@@ -67,50 +67,49 @@ ThirdParty Licenses
 | commons-codec:commons-codec:1.15 | Apache License, Version 2.0 |
 | commons-collections:commons-collections:3.2.2 | Apache License, Version 2.0 |
 | commons-digester:commons-digester:2.1 | The Apache Software License, Version 2.0 |
-| commons-fileupload:commons-fileupload:1.4 | Apache License, Version 2.0 |
+| commons-fileupload:commons-fileupload:1.5 | Apache-2.0 |
 | commons-io:commons-io:2.11.0 | Apache License, Version 2.0 |
 | commons-logging:commons-logging:1.2 | The Apache Software License, Version 2.0 |
 | commons-validator:commons-validator:1.7 | Apache License, Version 2.0 |
 | decentralized-identity:jsonld-common-java:1.0.0 | Unknown license |
 | info.weboftrust:ld-signatures-java:1.1.0 | Unknown license |
-| io.github.classgraph:classgraph:4.8.149 | The MIT License (MIT) |
 | io.github.erdtman:java-json-canonicalization:1.1 | Apache License, Version 2.0 |
 | io.github.openfeign:feign-core:12.1 | The Apache Software License, Version 2.0 |
 | io.github.openfeign:feign-httpclient:12.1 | The Apache Software License, Version 2.0 |
 | io.github.openfeign:feign-slf4j:12.1 | The Apache Software License, Version 2.0 |
 | io.github.openfeign.form:feign-form:3.8.0 | The Apache Software License, Version 2.0 |
 | io.github.openfeign.form:feign-form-spring:3.8.0 | The Apache Software License, Version 2.0 |
-| io.micrometer:micrometer-commons:1.10.3 | The Apache Software License, Version 2.0 |
-| io.micrometer:micrometer-core:1.10.3 | The Apache Software License, Version 2.0 |
-| io.micrometer:micrometer-observation:1.10.3 | The Apache Software License, Version 2.0 |
-| io.netty:netty-buffer:4.1.87.Final | Apache License, Version 2.0 |
-| io.netty:netty-codec:4.1.87.Final | Apache License, Version 2.0 |
-| io.netty:netty-codec-dns:4.1.87.Final | Apache License, Version 2.0 |
-| io.netty:netty-codec-http:4.1.87.Final | Apache License, Version 2.0 |
-| io.netty:netty-codec-http2:4.1.87.Final | Apache License, Version 2.0 |
-| io.netty:netty-codec-socks:4.1.87.Final | Apache License, Version 2.0 |
-| io.netty:netty-common:4.1.87.Final | Apache License, Version 2.0 |
-| io.netty:netty-handler:4.1.87.Final | Apache License, Version 2.0 |
-| io.netty:netty-handler-proxy:4.1.87.Final | Apache License, Version 2.0 |
-| io.netty:netty-resolver:4.1.87.Final | Apache License, Version 2.0 |
-| io.netty:netty-resolver-dns:4.1.87.Final | Apache License, Version 2.0 |
-| io.netty:netty-resolver-dns-classes-macos:4.1.87.Final | Apache License, Version 2.0 |
-| io.netty:netty-resolver-dns-native-macos:4.1.87.Final | Apache License, Version 2.0 |
-| io.netty:netty-tcnative-boringssl-static:2.0.56.Final | The Apache Software License, Version 2.0 |
-| io.netty:netty-tcnative-classes:2.0.56.Final | The Apache Software License, Version 2.0 |
-| io.netty:netty-transport:4.1.87.Final | Apache License, Version 2.0 |
-| io.netty:netty-transport-classes-epoll:4.1.87.Final | Apache License, Version 2.0 |
-| io.netty:netty-transport-classes-kqueue:4.1.87.Final | Apache License, Version 2.0 |
-| io.netty:netty-transport-native-epoll:4.1.87.Final | Apache License, Version 2.0 |
-| io.netty:netty-transport-native-kqueue:4.1.87.Final | Apache License, Version 2.0 |
-| io.netty:netty-transport-native-unix-common:4.1.87.Final | Apache License, Version 2.0 |
-| io.projectreactor:reactor-core:3.5.2 | Apache License, Version 2.0 |
-| io.projectreactor.netty:reactor-netty-core:1.1.2 | The Apache Software License, Version 2.0 |
-| io.projectreactor.netty:reactor-netty-http:1.1.2 | The Apache Software License, Version 2.0 |
+| io.micrometer:micrometer-commons:1.10.5 | The Apache Software License, Version 2.0 |
+| io.micrometer:micrometer-core:1.10.5 | The Apache Software License, Version 2.0 |
+| io.micrometer:micrometer-observation:1.10.5 | The Apache Software License, Version 2.0 |
+| io.netty:netty-buffer:4.1.90.Final | Apache License, Version 2.0 |
+| io.netty:netty-codec:4.1.90.Final | Apache License, Version 2.0 |
+| io.netty:netty-codec-dns:4.1.90.Final | Apache License, Version 2.0 |
+| io.netty:netty-codec-http:4.1.90.Final | Apache License, Version 2.0 |
+| io.netty:netty-codec-http2:4.1.90.Final | Apache License, Version 2.0 |
+| io.netty:netty-codec-socks:4.1.90.Final | Apache License, Version 2.0 |
+| io.netty:netty-common:4.1.90.Final | Apache License, Version 2.0 |
+| io.netty:netty-handler:4.1.90.Final | Apache License, Version 2.0 |
+| io.netty:netty-handler-proxy:4.1.90.Final | Apache License, Version 2.0 |
+| io.netty:netty-resolver:4.1.90.Final | Apache License, Version 2.0 |
+| io.netty:netty-resolver-dns:4.1.90.Final | Apache License, Version 2.0 |
+| io.netty:netty-resolver-dns-classes-macos:4.1.90.Final | Apache License, Version 2.0 |
+| io.netty:netty-resolver-dns-native-macos:4.1.90.Final | Apache License, Version 2.0 |
+| io.netty:netty-tcnative-boringssl-static:2.0.59.Final | The Apache Software License, Version 2.0 |
+| io.netty:netty-tcnative-classes:2.0.59.Final | The Apache Software License, Version 2.0 |
+| io.netty:netty-transport:4.1.90.Final | Apache License, Version 2.0 |
+| io.netty:netty-transport-classes-epoll:4.1.90.Final | Apache License, Version 2.0 |
+| io.netty:netty-transport-classes-kqueue:4.1.90.Final | Apache License, Version 2.0 |
+| io.netty:netty-transport-native-epoll:4.1.90.Final | Apache License, Version 2.0 |
+| io.netty:netty-transport-native-kqueue:4.1.90.Final | Apache License, Version 2.0 |
+| io.netty:netty-transport-native-unix-common:4.1.90.Final | Apache License, Version 2.0 |
+| io.projectreactor:reactor-core:3.5.4 | Apache License, Version 2.0 |
+| io.projectreactor.netty:reactor-netty-core:1.1.5 | The Apache Software License, Version 2.0 |
+| io.projectreactor.netty:reactor-netty-http:1.1.5 | The Apache Software License, Version 2.0 |
 | io.setl:rdf-urdna:1.1 | The Apache License, Version 2.0 |
-| io.swagger.core.v3:swagger-annotations:2.2.7 | Apache License 2.0 |
-| io.swagger.core.v3:swagger-core:2.2.7 | Apache License 2.0 |
-| io.swagger.core.v3:swagger-models:2.2.7 | Apache License 2.0 |
+| io.swagger.core.v3:swagger-annotations-jakarta:2.2.9 | Apache License 2.0 |
+| io.swagger.core.v3:swagger-core-jakarta:2.2.9 | Apache License 2.0 |
+| io.swagger.core.v3:swagger-models-jakarta:2.2.9 | Apache License 2.0 |
 | jakarta.activation:jakarta.activation-api:2.1.1 | EDL 1.0 |
 | jakarta.annotation:jakarta.annotation-api:2.1.1 | EPL 2.0 GPL2 w/ CPE |
 | jakarta.inject:jakarta.inject-api:2.0.0 | The Apache Software License, Version 2.0 |
@@ -121,16 +120,16 @@ ThirdParty Licenses
 | javax.activation:javax.activation-api:1.2.0 | CDDL/GPLv2+CE |
 | javax.xml.bind:jaxb-api:2.3.1 | CDDL 1.1 GPL2 w/ CPE |
 | joda-time:joda-time:2.10.2 | Apache 2 |
-| net.bytebuddy:byte-buddy:1.12.22 | Apache License, Version 2.0 |
-| net.bytebuddy:byte-buddy-agent:1.12.22 | Apache License, Version 2.0 |
+| net.bytebuddy:byte-buddy:1.12.23 | Apache License, Version 2.0 |
+| net.bytebuddy:byte-buddy-agent:1.12.23 | Apache License, Version 2.0 |
 | net.java.dev.jna:jna:5.5.0 | Apache License v2.0 LGPL, version 2.1 |
 | net.java.dev.jna:jna-platform:5.6.0 | Apache License v2.0 LGPL, version 2.1 |
-| net.javacrumbs.shedlock:shedlock-core:5.1.0 | The Apache Software License, Version 2.0 |
-| net.javacrumbs.shedlock:shedlock-provider-jdbc-template:5.1.0 | The Apache Software License, Version 2.0 |
-| net.javacrumbs.shedlock:shedlock-spring:5.1.0 | The Apache Software License, Version 2.0 |
+| net.javacrumbs.shedlock:shedlock-core:5.2.0 | The Apache Software License, Version 2.0 |
+| net.javacrumbs.shedlock:shedlock-provider-jdbc-template:5.2.0 | The Apache Software License, Version 2.0 |
+| net.javacrumbs.shedlock:shedlock-spring:5.2.0 | The Apache Software License, Version 2.0 |
 | net.jcip:jcip-annotations:1.0 | Unknown license |
-| net.minidev:accessors-smart:2.4.8 | The Apache Software License, Version 2.0 |
-| net.minidev:json-smart:2.4.8 | The Apache Software License, Version 2.0 |
+| net.minidev:accessors-smart:2.4.9 | The Apache Software License, Version 2.0 |
+| net.minidev:json-smart:2.4.10 | The Apache Software License, Version 2.0 |
 | org.abstractj.kalium:kalium:0.8.0 | The Apache Software License, Version 2.0 |
 | org.antlr:antlr4-runtime:4.10.1 | The BSD License |
 | org.apache.commons:commons-collections4:4.4 | Apache License, Version 2.0 |
@@ -140,32 +139,32 @@ ThirdParty Licenses
 | org.apache.httpcomponents:httpcore:4.4.16 | Apache License, Version 2.0 |
 | org.apache.logging.log4j:log4j-api:2.19.0 | Apache License, Version 2.0 |
 | org.apache.logging.log4j:log4j-to-slf4j:2.19.0 | Apache License, Version 2.0 |
-| org.apache.tomcat.embed:tomcat-embed-core:10.1.5 | Apache License, Version 2.0 |
-| org.apache.tomcat.embed:tomcat-embed-el:10.1.5 | Apache License, Version 2.0 |
-| org.apache.tomcat.embed:tomcat-embed-websocket:10.1.5 | Apache License, Version 2.0 |
+| org.apache.tomcat.embed:tomcat-embed-core:10.1.7 | Apache License, Version 2.0 |
+| org.apache.tomcat.embed:tomcat-embed-el:10.1.7 | Apache License, Version 2.0 |
+| org.apache.tomcat.embed:tomcat-embed-websocket:10.1.7 | Apache License, Version 2.0 |
 | org.apiguardian:apiguardian-api:1.1.2 | The Apache License, Version 2.0 |
 | org.aspectj:aspectjweaver:1.9.19 | Eclipse Public License - v 2.0 |
 | org.assertj:assertj-core:3.23.1 | Apache License, Version 2.0 |
 | org.bitcoinj:bitcoinj-core:0.16.2 | The Apache Software License, Version 2.0 |
 | org.bouncycastle:bcpkix-jdk15on:1.69 | Bouncy Castle Licence |
-| org.bouncycastle:bcpkix-jdk18on:1.72 | Bouncy Castle Licence |
+| org.bouncycastle:bcpkix-jdk18on:1.73 | Bouncy Castle Licence |
 | org.bouncycastle:bcprov-jdk15on:1.69 | Bouncy Castle Licence |
 | org.bouncycastle:bcprov-jdk15to18:1.69 | Bouncy Castle Licence |
-| org.bouncycastle:bcprov-jdk18on:1.72 | Bouncy Castle Licence |
+| org.bouncycastle:bcprov-jdk18on:1.73 | Bouncy Castle Licence |
 | org.bouncycastle:bcutil-jdk15on:1.69 | Bouncy Castle Licence |
-| org.bouncycastle:bcutil-jdk18on:1.72 | Bouncy Castle Licence |
+| org.bouncycastle:bcutil-jdk18on:1.73 | Bouncy Castle Licence |
 | org.checkerframework:checker-compat-qual:2.5.5 | GNU General Public License, version 2 (GPL2), with the classpath exception The MIT License |
 | org.checkerframework:checker-qual:3.5.0 | The MIT License |
 | org.codehaus.woodstox:stax2-api:4.2.1 | The BSD License |
-| org.eclipse.angus:angus-activation:1.0.0 | EDL 1.0 |
+| org.eclipse.angus:angus-activation:2.0.0 | EDL 1.0 |
 | org.glassfish:jakarta.json:2.0.0 | Eclipse Public License 2.0 GNU General Public License, version 2 with the GNU Classpath Exception |
-| org.glassfish.jaxb:jaxb-core:4.0.1 | Eclipse Distribution License - v 1.0 |
-| org.glassfish.jaxb:jaxb-runtime:4.0.1 | Eclipse Distribution License - v 1.0 |
-| org.glassfish.jaxb:txw2:4.0.1 | Eclipse Distribution License - v 1.0 |
+| org.glassfish.jaxb:jaxb-core:4.0.2 | Eclipse Distribution License - v 1.0 |
+| org.glassfish.jaxb:jaxb-runtime:4.0.2 | Eclipse Distribution License - v 1.0 |
+| org.glassfish.jaxb:txw2:4.0.2 | Eclipse Distribution License - v 1.0 |
 | org.hamcrest:hamcrest:2.2 | BSD License 3 |
 | org.hdrhistogram:HdrHistogram:2.1.12 | BSD-2-Clause Public Domain, per Creative Commons CC0 |
-| org.hibernate.common:hibernate-commons-annotations:6.0.2.Final | GNU Library General Public License v2.1 or later |
-| org.hibernate.orm:hibernate-core:6.1.6.Final | GNU Library General Public License v2.1 or later |
+| org.hibernate.common:hibernate-commons-annotations:6.0.6.Final | GNU Library General Public License v2.1 or later |
+| org.hibernate.orm:hibernate-core:6.1.7.Final | GNU Library General Public License v2.1 or later |
 | org.hibernate.validator:hibernate-validator:8.0.0.Final | Apache License 2.0 |
 | org.jboss:jandex:2.4.2.Final | Apache License, Version 2.0 |
 | org.jboss.logging:jboss-logging:3.5.0.Final | Apache License, version 2.0 |
@@ -174,7 +173,7 @@ ThirdParty Licenses
 | org.jetbrains.kotlin:kotlin-stdlib-common:1.7.22 | The Apache License, Version 2.0 |
 | org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.7.22 | The Apache License, Version 2.0 |
 | org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.7.22 | The Apache License, Version 2.0 |
-| org.json:json:20220320 | The JSON License |
+| org.json:json:20230227 | Public Domain |
 | org.junit.jupiter:junit-jupiter:5.9.2 | Eclipse Public License v2.0 |
 | org.junit.jupiter:junit-jupiter-api:5.9.2 | Eclipse Public License v2.0 |
 | org.junit.jupiter:junit-jupiter-engine:5.9.2 | Eclipse Public License v2.0 |
@@ -183,7 +182,7 @@ ThirdParty Licenses
 | org.junit.platform:junit-platform-engine:1.9.2 | Eclipse Public License v2.0 |
 | org.latencyutils:LatencyUtils:2.0.3 | Public Domain, per Creative Commons CC0 |
 | org.liquibase:liquibase-core:4.17.2 | Apache License, Version 2.0 |
-| org.mapstruct:mapstruct:1.5.3.Final | The Apache Software License, Version 2.0 |
+| org.mapstruct:mapstruct:1.5.5.Final | The Apache Software License, Version 2.0 |
 | org.mockito:mockito-core:4.8.1 | The MIT License |
 | org.mockito:mockito-junit-jupiter:4.8.1 | The MIT License |
 | org.objenesis:objenesis:3.2 | Apache License, Version 2.0 |
@@ -193,60 +192,59 @@ ThirdParty Licenses
 | org.ow2.asm:asm-commons:5.0.3 | BSD |
 | org.ow2.asm:asm-tree:5.0.3 | BSD |
 | org.ow2.asm:asm-util:5.0.3 | BSD |
-| org.postgresql:postgresql:42.5.1 | BSD-2-Clause |
-| org.projectlombok:lombok:1.18.24 | The MIT License |
+| org.postgresql:postgresql:42.5.4 | BSD-2-Clause |
+| org.projectlombok:lombok:1.18.26 | The MIT License |
 | org.reactivestreams:reactive-streams:1.0.4 | MIT-0 |
-| org.semver4j:semver4j:4.1.1 | The MIT License |
+| org.semver4j:semver4j:4.3.0 | The MIT License |
 | org.skyscreamer:jsonassert:1.5.1 | The Apache Software License, Version 2.0 |
-| org.slf4j:jul-to-slf4j:2.0.6 | MIT License |
-| org.slf4j:slf4j-api:2.0.6 | MIT License |
-| org.springdoc:springdoc-openapi-common:1.6.14 | The Apache License, Version 2.0 |
-| org.springdoc:springdoc-openapi-ui:1.6.14 | The Apache License, Version 2.0 |
-| org.springdoc:springdoc-openapi-webmvc-core:1.6.14 | The Apache License, Version 2.0 |
-| org.springframework:spring-aop:6.0.4 | Apache License, Version 2.0 |
-| org.springframework:spring-aspects:6.0.4 | Apache License, Version 2.0 |
-| org.springframework:spring-beans:6.0.4 | Apache License, Version 2.0 |
-| org.springframework:spring-context:6.0.4 | Apache License, Version 2.0 |
-| org.springframework:spring-core:6.0.4 | Apache License, Version 2.0 |
-| org.springframework:spring-expression:6.0.4 | Apache License, Version 2.0 |
-| org.springframework:spring-jcl:6.0.4 | Apache License, Version 2.0 |
-| org.springframework:spring-jdbc:6.0.4 | Apache License, Version 2.0 |
-| org.springframework:spring-orm:6.0.4 | Apache License, Version 2.0 |
-| org.springframework:spring-test:6.0.4 | Apache License, Version 2.0 |
-| org.springframework:spring-tx:6.0.4 | Apache License, Version 2.0 |
-| org.springframework:spring-web:6.0.4 | Apache License, Version 2.0 |
-| org.springframework:spring-webmvc:6.0.4 | Apache License, Version 2.0 |
-| org.springframework.boot:spring-boot:3.0.2 | Apache License, Version 2.0 |
-| org.springframework.boot:spring-boot-actuator:3.0.2 | Apache License, Version 2.0 |
-| org.springframework.boot:spring-boot-actuator-autoconfigure:3.0.2 | Apache License, Version 2.0 |
-| org.springframework.boot:spring-boot-autoconfigure:3.0.2 | Apache License, Version 2.0 |
-| org.springframework.boot:spring-boot-starter:3.0.2 | Apache License, Version 2.0 |
-| org.springframework.boot:spring-boot-starter-actuator:3.0.2 | Apache License, Version 2.0 |
-| org.springframework.boot:spring-boot-starter-aop:3.0.2 | Apache License, Version 2.0 |
-| org.springframework.boot:spring-boot-starter-data-jpa:3.0.2 | Apache License, Version 2.0 |
-| org.springframework.boot:spring-boot-starter-jdbc:3.0.2 | Apache License, Version 2.0 |
-| org.springframework.boot:spring-boot-starter-json:3.0.2 | Apache License, Version 2.0 |
-| org.springframework.boot:spring-boot-starter-logging:3.0.2 | Apache License, Version 2.0 |
-| org.springframework.boot:spring-boot-starter-test:3.0.2 | Apache License, Version 2.0 |
-| org.springframework.boot:spring-boot-starter-tomcat:3.0.2 | Apache License, Version 2.0 |
-| org.springframework.boot:spring-boot-starter-validation:3.0.2 | Apache License, Version 2.0 |
-| org.springframework.boot:spring-boot-starter-web:3.0.2 | Apache License, Version 2.0 |
-| org.springframework.boot:spring-boot-test:3.0.2 | Apache License, Version 2.0 |
-| org.springframework.boot:spring-boot-test-autoconfigure:3.0.2 | Apache License, Version 2.0 |
-| org.springframework.cloud:spring-cloud-commons:4.0.1 | Apache License, Version 2.0 |
-| org.springframework.cloud:spring-cloud-context:4.0.1 | Apache License, Version 2.0 |
-| org.springframework.cloud:spring-cloud-openfeign-core:4.0.1 | Apache License, Version 2.0 |
-| org.springframework.cloud:spring-cloud-starter:4.0.1 | Apache License, Version 2.0 |
-| org.springframework.cloud:spring-cloud-starter-openfeign:4.0.1 | Apache License, Version 2.0 |
-| org.springframework.data:spring-data-commons:3.0.1 | Apache License, Version 2.0 |
-| org.springframework.data:spring-data-jpa:3.0.1 | Apache License, Version 2.0 |
-| org.springframework.security:spring-security-config:6.0.1 | Apache License, Version 2.0 |
-| org.springframework.security:spring-security-core:6.0.1 | Apache License, Version 2.0 |
-| org.springframework.security:spring-security-crypto:6.0.1 | Apache License, Version 2.0 |
+| org.slf4j:jul-to-slf4j:2.0.7 | MIT License |
+| org.slf4j:slf4j-api:2.0.7 | MIT License |
+| org.springdoc:springdoc-openapi-starter-common:2.1.0 | The Apache License, Version 2.0 |
+| org.springdoc:springdoc-openapi-starter-webmvc-api:2.1.0 | The Apache License, Version 2.0 |
+| org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0 | The Apache License, Version 2.0 |
+| org.springframework:spring-aop:6.0.7 | Apache License, Version 2.0 |
+| org.springframework:spring-aspects:6.0.7 | Apache License, Version 2.0 |
+| org.springframework:spring-beans:6.0.7 | Apache License, Version 2.0 |
+| org.springframework:spring-context:6.0.7 | Apache License, Version 2.0 |
+| org.springframework:spring-core:6.0.7 | Apache License, Version 2.0 |
+| org.springframework:spring-expression:6.0.7 | Apache License, Version 2.0 |
+| org.springframework:spring-jcl:6.0.7 | Apache License, Version 2.0 |
+| org.springframework:spring-jdbc:6.0.7 | Apache License, Version 2.0 |
+| org.springframework:spring-orm:6.0.7 | Apache License, Version 2.0 |
+| org.springframework:spring-test:6.0.7 | Apache License, Version 2.0 |
+| org.springframework:spring-tx:6.0.7 | Apache License, Version 2.0 |
+| org.springframework:spring-web:6.0.7 | Apache License, Version 2.0 |
+| org.springframework:spring-webmvc:6.0.7 | Apache License, Version 2.0 |
+| org.springframework.boot:spring-boot:3.0.5 | Apache License, Version 2.0 |
+| org.springframework.boot:spring-boot-actuator:3.0.5 | Apache License, Version 2.0 |
+| org.springframework.boot:spring-boot-actuator-autoconfigure:3.0.5 | Apache License, Version 2.0 |
+| org.springframework.boot:spring-boot-autoconfigure:3.0.5 | Apache License, Version 2.0 |
+| org.springframework.boot:spring-boot-starter:3.0.5 | Apache License, Version 2.0 |
+| org.springframework.boot:spring-boot-starter-actuator:3.0.5 | Apache License, Version 2.0 |
+| org.springframework.boot:spring-boot-starter-aop:3.0.5 | Apache License, Version 2.0 |
+| org.springframework.boot:spring-boot-starter-data-jpa:3.0.5 | Apache License, Version 2.0 |
+| org.springframework.boot:spring-boot-starter-jdbc:3.0.5 | Apache License, Version 2.0 |
+| org.springframework.boot:spring-boot-starter-json:3.0.5 | Apache License, Version 2.0 |
+| org.springframework.boot:spring-boot-starter-logging:3.0.5 | Apache License, Version 2.0 |
+| org.springframework.boot:spring-boot-starter-test:3.0.5 | Apache License, Version 2.0 |
+| org.springframework.boot:spring-boot-starter-tomcat:3.0.5 | Apache License, Version 2.0 |
+| org.springframework.boot:spring-boot-starter-validation:3.0.5 | Apache License, Version 2.0 |
+| org.springframework.boot:spring-boot-starter-web:3.0.5 | Apache License, Version 2.0 |
+| org.springframework.boot:spring-boot-test:3.0.5 | Apache License, Version 2.0 |
+| org.springframework.boot:spring-boot-test-autoconfigure:3.0.5 | Apache License, Version 2.0 |
+| org.springframework.cloud:spring-cloud-commons:4.0.2 | Apache License, Version 2.0 |
+| org.springframework.cloud:spring-cloud-context:4.0.2 | Apache License, Version 2.0 |
+| org.springframework.cloud:spring-cloud-openfeign-core:4.0.2 | Apache License, Version 2.0 |
+| org.springframework.cloud:spring-cloud-starter:4.0.2 | Apache License, Version 2.0 |
+| org.springframework.cloud:spring-cloud-starter-openfeign:4.0.2 | Apache License, Version 2.0 |
+| org.springframework.data:spring-data-commons:3.0.4 | Apache License, Version 2.0 |
+| org.springframework.data:spring-data-jpa:3.0.4 | Apache License, Version 2.0 |
+| org.springframework.security:spring-security-config:6.0.2 | Apache License, Version 2.0 |
+| org.springframework.security:spring-security-core:6.0.2 | Apache License, Version 2.0 |
+| org.springframework.security:spring-security-crypto:6.0.2 | Apache License, Version 2.0 |
 | org.springframework.security:spring-security-rsa:1.0.11.RELEASE | Apache 2.0 |
-| org.springframework.security:spring-security-test:6.0.1 | Apache License, Version 2.0 |
-| org.springframework.security:spring-security-web:6.0.1 | Apache License, Version 2.0 |
-| org.webjars:swagger-ui:4.15.5 | Apache 2.0 |
-| org.webjars:webjars-locator-core:0.52 | MIT |
+| org.springframework.security:spring-security-test:6.0.2 | Apache License, Version 2.0 |
+| org.springframework.security:spring-security-web:6.0.2 | Apache License, Version 2.0 |
+| org.webjars:swagger-ui:4.18.2 | Apache 2.0 |
 | org.xmlunit:xmlunit-core:2.9.1 | The Apache Software License, Version 2.0 |
 | org.yaml:snakeyaml:1.33 | Apache License, Version 2.0 |
