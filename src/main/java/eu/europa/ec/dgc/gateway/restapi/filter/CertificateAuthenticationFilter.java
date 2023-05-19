@@ -170,12 +170,16 @@ public class CertificateAuthenticationFilter extends OncePerRequestFilter {
             X509Certificate certificate = (X509Certificate) token.getCredentials();
             certSubject = certificate.getSubjectX500Principal().toString();
             certThumbprint = httpServletRequest.getUserPrincipal().getName();
-        } else if (certSubjectHeaderValue != null && certThumbprintHeaderValue != null) {
+        } 
+                
+        if (certSubjectHeaderValue != null && certThumbprintHeaderValue != null) {
             log.debug("Found Cert Subject and Thumbprint in Request Headers");
 
             certSubject = certSubjectHeaderValue;
             certThumbprint = normalizeCertificateHash(certThumbprintHeaderValue);
-        } else if (certPemHeaderValue != null) {
+        }
+        
+        if (certPemHeaderValue != null) {
             log.debug("Found Cert PEM in Request Headers");
 
             X509Certificate x509Certificate = getCertificateFromPem(certPemHeaderValue);
@@ -185,7 +189,7 @@ public class CertificateAuthenticationFilter extends OncePerRequestFilter {
                 certThumbprint = certificateUtils.getCertThumbprint(x509Certificate);
             }
         }
-
+       
         if (certSubject == null || certThumbprint == null) {
             log.error("No authentication information");
             handlerExceptionResolver.resolveException(
