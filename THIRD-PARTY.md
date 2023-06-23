@@ -82,6 +82,7 @@ ThirdParty Licenses
 | io.micrometer:micrometer-commons:1.10.5 | The Apache Software License, Version 2.0 |
 | io.micrometer:micrometer-core:1.10.5 | The Apache Software License, Version 2.0 |
 | io.micrometer:micrometer-observation:1.10.5 | The Apache Software License, Version 2.0 |
+| io.micrometer:micrometer-registry-prometheus:1.10.5 | The Apache Software License, Version 2.0 |
 | io.netty:netty-buffer:4.1.90.Final | Apache License, Version 2.0 |
 | io.netty:netty-codec:4.1.90.Final | Apache License, Version 2.0 |
 | io.netty:netty-codec-dns:4.1.90.Final | Apache License, Version 2.0 |
@@ -106,6 +107,11 @@ ThirdParty Licenses
 | io.projectreactor:reactor-core:3.5.4 | Apache License, Version 2.0 |
 | io.projectreactor.netty:reactor-netty-core:1.1.5 | The Apache Software License, Version 2.0 |
 | io.projectreactor.netty:reactor-netty-http:1.1.5 | The Apache Software License, Version 2.0 |
+| io.prometheus:simpleclient:0.16.0 | The Apache Software License, Version 2.0 |
+| io.prometheus:simpleclient_common:0.16.0 | The Apache Software License, Version 2.0 |
+| io.prometheus:simpleclient_tracer_common:0.16.0 | The Apache Software License, Version 2.0 |
+| io.prometheus:simpleclient_tracer_otel:0.16.0 | The Apache Software License, Version 2.0 |
+| io.prometheus:simpleclient_tracer_otel_agent:0.16.0 | The Apache Software License, Version 2.0 |
 | io.setl:rdf-urdna:1.1 | The Apache License, Version 2.0 |
 | io.swagger.core.v3:swagger-annotations-jakarta:2.2.9 | Apache License 2.0 |
 | io.swagger.core.v3:swagger-core-jakarta:2.2.9 | Apache License 2.0 |

@@ -20,13 +20,33 @@ spring:
       pool:
         size: 5
 management:
-  health:
-    probes:
-      enabled: true
   server:
+    port: 8091
     ssl:
       enabled: false
-    port: 8091
+  endpoint:
+    info:
+      enabled: true
+    health:
+      enabled: true
+      probes:
+        enabled: true
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  endpoints:
+    enabled-by-default: false
+    web:
+      exposure:
+        include: info,health,metrics,prometheus
+    jmx:
+      exposure:
+        include: info,health,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
 dgc:
   jrc:
     url: https://covid-19-diagnostics.jrc.ec.europa.eu/devices/hsc-common-recognition-rat
