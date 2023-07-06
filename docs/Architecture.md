@@ -415,6 +415,7 @@ The secretariat must handle the following tasks to establish the onboarding proc
 * Creation and Securing a Key Pair (Trust Anchor)  to sign/confirm onboarding requests for the gateway
 * Delivering the Public Key of the Trust Anchor to the Gateway Operations
 * Transmitting Onboarding Requests to the Gateway Operations
+* 
 
 
 ________________
