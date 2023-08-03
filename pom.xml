@@ -247,7 +247,7 @@
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-javalite</artifactId>
-            <version>3.21.12</version> 
+            <version>3.21.12</version>
         </dependency>
 
         <dependency>
