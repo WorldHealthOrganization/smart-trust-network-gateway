@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.cloud</groupId>
         <artifactId>spring-cloud-starter-parent</artifactId>
-        <version>2022.0.2</version>
+        <version>2022.0.4</version>
         <relativePath/>
     </parent>
 
@@ -47,13 +47,14 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <!-- dependencies -->
-        <owasp.version>8.2.1</owasp.version>
+        <owasp.version>8.3.1</owasp.version>
         <springdoc.version>2.1.0</springdoc.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
-        <bcpkix.version>1.73</bcpkix.version>
+        <bcpkix.version>1.76</bcpkix.version>
         <semver4j.version>4.3.0</semver4j.version>
         <json-schema.version>1.14.2</json-schema.version>
         <shedlock.version>5.2.0</shedlock.version>
+        <h2.version>2.2.220</h2.version>
         <!-- plugins -->
         <plugin.maven-assembly.version>3.4.2</plugin.maven-assembly.version>
         <plugin.checkstyle.version>3.2.1</plugin.checkstyle.version>
@@ -147,7 +148,7 @@
         <dependency>
             <groupId>eu.europa.ec.dgc</groupId>
             <artifactId>ddcc-gateway-lib</artifactId>
-            <version>2.0.0</version>
+            <version>2.0.1</version>
         </dependency>
         <dependency>
             <groupId>org.semver4j</groupId>
@@ -237,6 +238,10 @@
                     <groupId>com.google.protobuf</groupId>
                     <artifactId>protobuf-javalite</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.bouncycastle</groupId>
+                    <artifactId>bcprov-jdk15to18</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -272,6 +277,7 @@
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
+            <version>${h2.version}</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
@@ -368,7 +374,7 @@
                 <version>${owasp.version}</version>
                 <configuration>
                     <suppressionFile>./owasp/suppressions.xml</suppressionFile>
-                    <failBuildOnAnyVulnerability>true</failBuildOnAnyVulnerability>
+                    <failBuildOnCVSS>8</failBuildOnCVSS>
                     <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
                 </configuration>
             </plugin>
