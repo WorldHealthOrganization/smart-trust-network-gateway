@@ -100,6 +100,8 @@ public class DidTrustListServiceTest {
     X509Certificate certUploadDe, certUploadEu, certCscaDe, certCscaEu, certAuthDe, certAuthEu, certDscDe, certDscEu,
         federatedCertDscEx;
 
+    String certDscDeKid;
+
     FederationGatewayEntity federationGateway;
 
     @AfterEach
@@ -130,6 +132,8 @@ public class DidTrustListServiceTest {
         certDscDe =
             CertificateTestUtils.generateCertificate(keyPairGenerator.generateKeyPair(), "DE", "Test", certCscaDe,
                 trustedPartyTestHelper.getPrivateKey(TrustedPartyEntity.CertificateType.AUTHENTICATION, "DE"));
+
+        certDscDeKid = certificateUtils.getCertKid(certDscDe);
         certDscEu =
             CertificateTestUtils.generateCertificate(keyPairGenerator.generateKeyPair(), "EU", "Test", certCscaEu,
                 trustedPartyTestHelper.getPrivateKey(TrustedPartyEntity.CertificateType.AUTHENTICATION, "EU"));
@@ -141,7 +145,7 @@ public class DidTrustListServiceTest {
             certificateUtils.getCertThumbprint(certDscDe),
             Base64.getEncoder().encodeToString(certDscDe.getEncoded()),
             "sig1",
-            "kid1",
+            null, // Don't provide a KID to test that calculated KID will be used
             SignerInformationEntity.CertificateType.DSC,
             null
         ));
@@ -191,7 +195,7 @@ public class DidTrustListServiceTest {
         Assertions.assertEquals("b", parsed.getController());
         Assertions.assertEquals(6, parsed.getVerificationMethod().size());
 
-        assertVerificationMethod(parsed.getVerificationMethod().get(0), "kid1", certDscDe, certCscaDe);
+        assertVerificationMethod(parsed.getVerificationMethod().get(0), certDscDeKid, certDscDe, certCscaDe);
         assertVerificationMethod(parsed.getVerificationMethod().get(1), "kid2", certDscEu, certCscaEu);
         assertVerificationMethod(parsed.getVerificationMethod().get(2), "kid3", federatedCertDscEx, null);
 

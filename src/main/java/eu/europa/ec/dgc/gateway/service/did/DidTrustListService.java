@@ -27,11 +27,11 @@ import eu.europa.ec.dgc.gateway.config.DgcConfigProperties;
 import eu.europa.ec.dgc.gateway.entity.SignerInformationEntity;
 import eu.europa.ec.dgc.gateway.entity.TrustedIssuerEntity;
 import eu.europa.ec.dgc.gateway.entity.TrustedPartyEntity;
+import eu.europa.ec.dgc.gateway.model.TrustedCertificateTrustList;
 import eu.europa.ec.dgc.gateway.restapi.dto.did.DidTrustListDto;
 import eu.europa.ec.dgc.gateway.restapi.dto.did.DidTrustListEntryDto;
-import eu.europa.ec.dgc.gateway.service.SignerInformationService;
+import eu.europa.ec.dgc.gateway.service.TrustListService;
 import eu.europa.ec.dgc.gateway.service.TrustedIssuerService;
-import eu.europa.ec.dgc.gateway.service.TrustedPartyService;
 import foundation.identity.jsonld.ConfigurableDocumentLoader;
 import foundation.identity.jsonld.JsonLDObject;
 import info.weboftrust.ldsignatures.jsonld.LDSecurityKeywords;
@@ -39,7 +39,6 @@ import info.weboftrust.ldsignatures.signer.JsonWebSignature2020LdSigner;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -66,11 +65,9 @@ public class DidTrustListService {
         "https://www.w3.org/ns/did/v1",
         "https://w3id.org/security/suites/jws-2020/v1");
 
-    private final TrustedPartyService trustedPartyService;
-
-    private final SignerInformationService signerInformationService;
-
     private final TrustedIssuerService trustedIssuerService;
+
+    private final TrustListService trustListService;
 
     private final DgcConfigProperties configProperties;
 
@@ -112,17 +109,18 @@ public class DidTrustListService {
 
 
         // Add DSC
-        List<SignerInformationEntity> certs = signerInformationService.getSignerInformation(
-            null, null, null, configProperties.getDid().getIncludeFederated());
+        List<TrustedCertificateTrustList> certs = trustListService.getTrustedCertificateTrustList(
+            SignerInformationEntity.CertificateType.stringValues(),
+            null,
+            null,
+            configProperties.getDid().getIncludeFederated()
+        );
 
-        for (SignerInformationEntity cert : certs) {
+        for (TrustedCertificateTrustList cert : certs) {
             DidTrustListEntryDto.EcPublicKeyJwk.EcPublicKeyJwkBuilder<?, ?> jwkBuilder =
                 DidTrustListEntryDto.EcPublicKeyJwk.builder();
 
-            X509Certificate x509 = signerInformationService.getX509CertificateFromEntity(cert);
-
-
-            if (x509.getPublicKey() instanceof ECPublicKey publicKey) {
+            if (cert.getParsedCertificate().getPublicKey() instanceof ECPublicKey publicKey) {
 
                 jwkBuilder.valueX(Base64.getEncoder().encodeToString(publicKey.getW().getAffineX().toByteArray()));
                 jwkBuilder.valueY(Base64.getEncoder().encodeToString(publicKey.getW().getAffineY().toByteArray()));
@@ -137,18 +135,22 @@ public class DidTrustListService {
                 }
 
                 jwkBuilder.keyType("EC");
-                jwkBuilder.encodedX509Certificates(new ArrayList<>(List.of(cert.getRawData())));
+                jwkBuilder.encodedX509Certificates(new ArrayList<>(List.of(cert.getCertificate())));
                 DidTrustListEntryDto.EcPublicKeyJwk jwk = jwkBuilder.build();
 
-                Optional<X509Certificate> csca =
-                        trustedPartyService.getCertificate(
-                                cert.getCountry(), TrustedPartyEntity.CertificateType.CSCA).stream()
-                                .map(trustedPartyService::getX509CertificateFromEntity)
-                                .filter(tp -> tp.getSubjectX500Principal().equals(x509.getIssuerX500Principal()))
-                                .findFirst();
+                // Search for Issuer of DSC
+                Optional<TrustedCertificateTrustList> csca = trustListService.getTrustedCertificateTrustList(
+                            List.of(TrustedPartyEntity.CertificateType.CSCA.name()),
+                            List.of(cert.getCountry()),
+                            List.of(cert.getDomain()),
+                            configProperties.getDid().getIncludeFederated()).stream()
+                        .filter(tp -> tp.getParsedCertificate().getSubjectX500Principal()
+                            .equals(cert.getParsedCertificate().getIssuerX500Principal()))
+                        .findFirst();
 
                 if (csca.isPresent()) {
-                    jwk.getEncodedX509Certificates().add(Base64.getEncoder().encodeToString(csca.get().getEncoded()));
+                    jwk.getEncodedX509Certificates()
+                        .add(Base64.getEncoder().encodeToString(csca.get().getParsedCertificate().getEncoded()));
                 }
 
                 DidTrustListEntryDto trustListEntry = new DidTrustListEntryDto();
@@ -161,8 +163,8 @@ public class DidTrustListService {
 
             } else {
                 log.error("Public Key is not EC Public Key for cert {} of country {}",
-                        cert.getThumbprint(),
-                        cert.getCountry());
+                    cert.getThumbprint(),
+                    cert.getCountry());
             }
 
         }

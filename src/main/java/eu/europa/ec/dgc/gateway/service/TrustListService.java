@@ -156,7 +156,8 @@ public class TrustListService {
                 ? trustedPartyEntity.getSourceGateway().getGatewayId() : null,
             trustedPartyEntity.getUuid(),
             trustedPartyEntity.getDomain(),
-            trustedPartyEntity.getVersion()
+            trustedPartyEntity.getVersion(),
+            trustedPartyService.getX509CertificateFromEntity(trustedPartyEntity)
         );
     }
 
@@ -174,7 +175,8 @@ public class TrustListService {
                 ? signerInformationEntity.getSourceGateway().getGatewayId() : null,
             signerInformationEntity.getUuid(),
             signerInformationEntity.getDomain(),
-            signerInformationEntity.getVersion()
+            signerInformationEntity.getVersion(),
+            signerInformationService.getX509CertificateFromEntity(signerInformationEntity)
         );
     }
 
