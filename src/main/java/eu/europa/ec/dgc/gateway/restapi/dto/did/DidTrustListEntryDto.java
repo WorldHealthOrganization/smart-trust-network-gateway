@@ -60,4 +60,15 @@ public class DidTrustListEntryDto {
         private String valueY;
     }
 
+    @Data
+    @SuperBuilder
+    public static class RsaPublicKeyJwk extends PublicKeyJwk {
+
+        @JsonProperty("e")
+        private String valueE;
+
+        @JsonProperty("n")
+        private String valueN;
+    }
+
 }
