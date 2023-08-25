@@ -30,6 +30,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+
 @Getter
 @Setter
 @Entity
@@ -45,8 +46,7 @@ public class ValuesetEntity {
     /**
      * Signature of the TrustAnchor.
      */
-    @Column(name = "json", nullable = false, length = 1024000)
-    @Lob
+    @Column(name = "json", nullable = false, columnDefinition = "TEXT")
     String json;
 
 }
