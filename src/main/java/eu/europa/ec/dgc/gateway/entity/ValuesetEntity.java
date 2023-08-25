@@ -47,6 +47,7 @@ public class ValuesetEntity {
      * Signature of the TrustAnchor.
      */
     @Column(name = "json", nullable = false, columnDefinition = "TEXT")
+    @Lob
     String json;
 
 }
