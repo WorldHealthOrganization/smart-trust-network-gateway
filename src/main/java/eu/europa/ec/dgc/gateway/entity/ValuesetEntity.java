@@ -28,6 +28,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.type.descriptor.jdbc.LongVarcharJdbcType;
 
 
 @Getter
@@ -45,7 +47,8 @@ public class ValuesetEntity {
     /**
      * Signature of the TrustAnchor.
      */
-    @Column(name = "json", nullable = false, columnDefinition = "text")
+    @Column(name = "json", nullable = false, length = 1_024_000)
+    @JdbcType(LongVarcharJdbcType.class)
     String json;
 
 }
