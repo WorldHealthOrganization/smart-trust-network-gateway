@@ -19,4 +19,6 @@
     <include file="db/changelog/fix-charset.xml"/>
     <include file="db/changelog/add-trusted-reference-url-column.xml"/>
     <include file="db/changelog/increase-column-size-for-validation-rule-signature.xml"/>
+    <include file="db/changelog/change-data-type-for-valuesets.xml"/>
+    <include file="db/changelog/change-revocation-batch-value-type.xml"/>
 </databaseChangeLog>
