@@ -48,6 +48,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedHashMap;
+import java.util.List;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -109,6 +110,7 @@ public class DidTrustListServiceTest {
         trustedPartyRepository.deleteAll();
         signerInformationRepository.deleteAll();
         federationGatewayRepository.deleteAll();
+        trustedIssuerRepository.deleteAll();
     }
 
     @BeforeEach
@@ -189,29 +191,41 @@ public class DidTrustListServiceTest {
 
         didTrustListService.job();
 
-        SignedDidTrustListDto parsed = objectMapper.readValue(uploadArgumentCaptor.getValue(), SignedDidTrustListDto.class);
+        SignedDidTrustListDto parsed =
+            objectMapper.readValue(uploadArgumentCaptor.getValue(), SignedDidTrustListDto.class);
 
         Assertions.assertEquals("a", parsed.getId());
         Assertions.assertEquals("b", parsed.getController());
         Assertions.assertEquals(6, parsed.getVerificationMethod().size());
 
-        assertVerificationMethod(parsed.getVerificationMethod().get(0), certDscDeKid, certDscDe, certCscaDe);
-        assertVerificationMethod(parsed.getVerificationMethod().get(1), "kid2", certDscEu, certCscaEu);
-        assertVerificationMethod(parsed.getVerificationMethod().get(2), "kid3", federatedCertDscEx, null);
+        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c" + certDscDeKid),
+            certDscDeKid, certDscDe, certCscaDe);
+        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "ckid2"),
+            "kid2", certDscEu, certCscaEu);
+        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "ckid3"),
+            "kid3", federatedCertDscEx, null);
 
         Assertions.assertTrue(parsed.getVerificationMethod().contains("did:trusted:DE:issuer"));
         Assertions.assertTrue(parsed.getVerificationMethod().contains("did:trusted:EU:issuer"));
         Assertions.assertTrue(parsed.getVerificationMethod().contains("did:trusted:XY:issuer"));
         Assertions.assertEquals(2, parsed.getContext().size());
         Assertions.assertEquals("JsonWebSignature2020", parsed.getProof().getType());
-        Assertions.assertTrue(Instant.now().toEpochMilli() - parsed.getProof().getCreated().toInstant().toEpochMilli() < 10000);
+        Assertions.assertTrue(
+            Instant.now().toEpochMilli() - parsed.getProof().getCreated().toInstant().toEpochMilli() < 10000);
         Assertions.assertEquals("f", parsed.getProof().getDomain());
         Assertions.assertEquals("g", parsed.getProof().getNonce());
         Assertions.assertEquals("assertionMethod", parsed.getProof().getProofPurpose());
         Assertions.assertEquals("e", parsed.getProof().getVerificationMethod());
         Assertions.assertNotNull(parsed.getProof().getJws());
         Assertions.assertNotEquals("", parsed.getProof().getJws());
+    }
 
+    private Object getVerificationMethodByKid(List<Object> verificationMethods, String kid) {
+        return verificationMethods.stream()
+            .map(entry -> (LinkedHashMap) entry)
+            .filter(entry -> entry.get("id").equals(kid))
+            .findFirst()
+            .orElseGet(() -> Assertions.fail("Could not find VerificationMethod with KID " + kid));
     }
 
     private void assertVerificationMethod(Object in, String kid, X509Certificate dsc, X509Certificate csca)
@@ -223,8 +237,10 @@ public class DidTrustListServiceTest {
 
         LinkedHashMap publicKeyJwk = (LinkedHashMap) jsonNode.get("publicKeyJwk");
 
-        Assertions.assertEquals(((ECPublicKey) dsc.getPublicKey()).getW().getAffineX(), new BigInteger(Base64.getDecoder().decode(publicKeyJwk.get("x").toString())));
-        Assertions.assertEquals(((ECPublicKey) dsc.getPublicKey()).getW().getAffineY(), new BigInteger(Base64.getDecoder().decode(publicKeyJwk.get("y").toString())));
+        Assertions.assertEquals(((ECPublicKey) dsc.getPublicKey()).getW().getAffineX(),
+            new BigInteger(Base64.getDecoder().decode(publicKeyJwk.get("x").toString())));
+        Assertions.assertEquals(((ECPublicKey) dsc.getPublicKey()).getW().getAffineY(),
+            new BigInteger(Base64.getDecoder().decode(publicKeyJwk.get("y").toString())));
         Assertions.assertEquals("EC", publicKeyJwk.get("kty").toString());
         Assertions.assertEquals("P-256", publicKeyJwk.get("crv").toString());
         ArrayList<String> x5c = ((ArrayList<String>) publicKeyJwk.get("x5c"));
