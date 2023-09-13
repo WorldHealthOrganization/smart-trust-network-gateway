@@ -160,7 +160,6 @@ public class DidTrustListService {
 
             if (didContextFile == null) {
                 log.error("Failed to load DID-Context Document for {}: No Mapping to local JSON-File.", didContext);
-
             }
 
             try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(
@@ -226,18 +225,10 @@ public class DidTrustListService {
                                          RSAPublicKey rsaPublicKey) throws CertificateEncodingException {
         DidTrustListEntryDto.RsaPublicKeyJwk.RsaPublicKeyJwkBuilder<?, ?> jwkBuilder =
                 DidTrustListEntryDto.RsaPublicKeyJwk.builder();
-        AlgorithmParameterSpec params = rsaPublicKey.getParams();
-        if (params instanceof RSAKey) {
-            jwkBuilder.valueN(Base64.getEncoder()
-                    .encodeToString(rsaPublicKey.getModulus().toByteArray()));
-            jwkBuilder.valueE(Base64.getEncoder()
-                    .encodeToString(rsaPublicKey.getPublicExponent().toByteArray()));
-        } else {
-            log.error("RSA Public Key has no Parameters for cert {} of country {}",
-                cert.getThumbprint(),
-                cert.getCountry());
-            return true;
-        }
+        jwkBuilder.valueN(Base64.getEncoder()
+                .encodeToString(rsaPublicKey.getModulus().toByteArray()));
+        jwkBuilder.valueE(Base64.getEncoder()
+                .encodeToString(rsaPublicKey.getPublicExponent().toByteArray()));
         jwkBuilder.keyType("RSA");
         jwkBuilder.encodedX509Certificates(new ArrayList<>(List.of(cert.getCertificate())));
         DidTrustListEntryDto.RsaPublicKeyJwk jwk = jwkBuilder.build();
@@ -262,7 +253,7 @@ public class DidTrustListService {
     @NotNull
     private Optional<TrustedCertificateTrustList> searchForIssuer(TrustedCertificateTrustList cert) {
         // Search for Issuer of DSC
-        Optional<TrustedCertificateTrustList> csca = trustListService.getTrustedCertificateTrustList(
+        return trustListService.getTrustedCertificateTrustList(
                         List.of(TrustedPartyEntity.CertificateType.CSCA.name()),
                         List.of(cert.getCountry()),
                         List.of(cert.getDomain()),
@@ -270,6 +261,5 @@ public class DidTrustListService {
                 .filter(tp -> tp.getParsedCertificate().getSubjectX500Principal()
                         .equals(cert.getParsedCertificate().getIssuerX500Principal()))
                 .findFirst();
-        return csca;
     }
 }
