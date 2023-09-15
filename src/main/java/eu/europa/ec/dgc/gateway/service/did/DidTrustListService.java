@@ -178,6 +178,7 @@ public class DidTrustListService {
 
         return jsonLdObject.toJson();
     }
+
     private void addTrustListEntry(DidTrustListDto trustList,
                                    TrustedCertificateTrustList cert,
                                    DidTrustListEntryDto.PublicKeyJwk publicKeyJwk) throws CertificateEncodingException {

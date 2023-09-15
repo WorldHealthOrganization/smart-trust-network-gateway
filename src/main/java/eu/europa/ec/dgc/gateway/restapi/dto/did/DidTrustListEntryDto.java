@@ -72,6 +72,13 @@ public class DidTrustListEntryDto {
         @JsonProperty("y")
         private String valueY;
 
+        /**
+         * Instantiate EC PublicKey JWK Class.
+         *
+         * @param ecPublicKey EC Public Key that should be wrapped.
+         * @param base64EncodedCertificates List of Base64 encoded Certificates assigned to provided Public Key.
+         *                                   They will be added within x5c property of JWK.
+         */
         public EcPublicKeyJwk(ECPublicKey ecPublicKey, List<String> base64EncodedCertificates) {
             super("EC", base64EncodedCertificates);
             valueX = Base64.getEncoder().encodeToString(ecPublicKey.getW().getAffineX().toByteArray());
@@ -97,6 +104,13 @@ public class DidTrustListEntryDto {
         @JsonProperty("n")
         private String valueN;
 
+        /**
+         * Instantiate RSA PublicKey JWK Class.
+         *
+         * @param rsaPublicKey RSA Public Key that should be wrapped.
+         * @param base64EncodedCertificates List of Base64 encoded Certificates assigned to provided Public Key.
+         *                                   They will be added within x5c property of JWK.
+         */
         public RsaPublicKeyJwk(RSAPublicKey rsaPublicKey, List<String> base64EncodedCertificates) {
             super("RSA", base64EncodedCertificates);
             valueN = Base64.getEncoder().encodeToString(rsaPublicKey.getModulus().toByteArray());
