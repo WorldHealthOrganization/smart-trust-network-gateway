@@ -42,9 +42,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.PublicKey;
 import java.security.cert.CertificateEncodingException;
 import java.security.interfaces.ECPublicKey;
-import java.security.interfaces.RSAKey;
 import java.security.interfaces.RSAPublicKey;
-import java.security.spec.AlgorithmParameterSpec;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
@@ -55,7 +53,6 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
-import org.bouncycastle.jce.spec.ECNamedCurveSpec;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -127,11 +124,13 @@ public class DidTrustListService {
             PublicKey publicKey = cert.getParsedCertificate().getPublicKey();
 
             if (publicKey instanceof RSAPublicKey rsaPublicKey) {
-                if (addRsaTrustListEntry(trustList, cert, rsaPublicKey)) {
-                    continue;
-                }
+                addTrustListEntry(trustList, cert,
+                    new DidTrustListEntryDto.RsaPublicKeyJwk(rsaPublicKey, List.of(cert.getCertificate())));
+
             } else if (publicKey instanceof ECPublicKey ecPublicKey) {
-                addEcTrustListEntry(trustList, cert, ecPublicKey);
+                addTrustListEntry(trustList, cert,
+                    new DidTrustListEntryDto.EcPublicKeyJwk(ecPublicKey, List.of(cert.getCertificate())));
+
             } else {
                 log.error("Public Key is not RSA or EC Public Key for cert {} of country {}",
                     cert.getThumbprint(),
@@ -179,35 +178,13 @@ public class DidTrustListService {
 
         return jsonLdObject.toJson();
     }
-
-    private void addEcTrustListEntry(DidTrustListDto trustList,
-                                     TrustedCertificateTrustList cert,
-                                     ECPublicKey ecPublicKey) throws CertificateEncodingException {
-        DidTrustListEntryDto.EcPublicKeyJwk.EcPublicKeyJwkBuilder<?, ?> jwkBuilder =
-                DidTrustListEntryDto.EcPublicKeyJwk.builder();
-
-        jwkBuilder.valueX(Base64.getEncoder().encodeToString(ecPublicKey.getW().getAffineX().toByteArray()));
-        jwkBuilder.valueY(Base64.getEncoder().encodeToString(ecPublicKey.getW().getAffineY().toByteArray()));
-
-        ECNamedCurveSpec curveSpec = (ECNamedCurveSpec) ecPublicKey.getParams();
-        switch (curveSpec.getName()) {
-            case "prime256v1" -> jwkBuilder.curve("P-256");
-            case "prime384v1" -> jwkBuilder.curve("P-384");
-            case "prime521v1" -> jwkBuilder.curve("P-521");
-            default -> {
-                log.error("Unknown Curve: {}", curveSpec.getName());
-                return;
-            }
-        }
-
-        jwkBuilder.keyType("EC");
-        jwkBuilder.encodedX509Certificates(new ArrayList<>(List.of(cert.getCertificate())));
-        DidTrustListEntryDto.EcPublicKeyJwk jwk = jwkBuilder.build();
-
+    private void addTrustListEntry(DidTrustListDto trustList,
+                                   TrustedCertificateTrustList cert,
+                                   DidTrustListEntryDto.PublicKeyJwk publicKeyJwk) throws CertificateEncodingException {
         Optional<TrustedCertificateTrustList> csca = searchForIssuer(cert);
 
         if (csca.isPresent()) {
-            jwk.getEncodedX509Certificates()
+            publicKeyJwk.getEncodedX509Certificates()
                 .add(Base64.getEncoder().encodeToString(csca.get().getParsedCertificate().getEncoded()));
         }
 
@@ -215,51 +192,21 @@ public class DidTrustListService {
         trustListEntry.setType("JsonWebKey2020");
         trustListEntry.setId(configProperties.getDid().getTrustListIdPrefix() + cert.getKid());
         trustListEntry.setController(configProperties.getDid().getTrustListControllerPrefix());
-        trustListEntry.setPublicKeyJwk(jwk);
+        trustListEntry.setPublicKeyJwk(publicKeyJwk);
 
         trustList.getVerificationMethod().add(trustListEntry);
-    }
-
-    private boolean addRsaTrustListEntry(DidTrustListDto trustList,
-                                         TrustedCertificateTrustList cert,
-                                         RSAPublicKey rsaPublicKey) throws CertificateEncodingException {
-        DidTrustListEntryDto.RsaPublicKeyJwk.RsaPublicKeyJwkBuilder<?, ?> jwkBuilder =
-                DidTrustListEntryDto.RsaPublicKeyJwk.builder();
-        jwkBuilder.valueN(Base64.getEncoder()
-                .encodeToString(rsaPublicKey.getModulus().toByteArray()));
-        jwkBuilder.valueE(Base64.getEncoder()
-                .encodeToString(rsaPublicKey.getPublicExponent().toByteArray()));
-        jwkBuilder.keyType("RSA");
-        jwkBuilder.encodedX509Certificates(new ArrayList<>(List.of(cert.getCertificate())));
-        DidTrustListEntryDto.RsaPublicKeyJwk jwk = jwkBuilder.build();
-
-        Optional<TrustedCertificateTrustList> csca = searchForIssuer(cert);
-
-        if (csca.isPresent()) {
-            jwk.getEncodedX509Certificates()
-                    .add(Base64.getEncoder().encodeToString(csca.get().getParsedCertificate().getEncoded()));
-        }
-
-        DidTrustListEntryDto trustListEntry = new DidTrustListEntryDto();
-        trustListEntry.setType("JsonWebKey2020");
-        trustListEntry.setId(configProperties.getDid().getTrustListIdPrefix() + cert.getKid());
-        trustListEntry.setController(configProperties.getDid().getTrustListControllerPrefix());
-        trustListEntry.setPublicKeyJwk(jwk);
-
-        trustList.getVerificationMethod().add(trustListEntry);
-        return false;
     }
 
     @NotNull
     private Optional<TrustedCertificateTrustList> searchForIssuer(TrustedCertificateTrustList cert) {
         // Search for Issuer of DSC
         return trustListService.getTrustedCertificateTrustList(
-                        List.of(TrustedPartyEntity.CertificateType.CSCA.name()),
-                        List.of(cert.getCountry()),
-                        List.of(cert.getDomain()),
-                        configProperties.getDid().getIncludeFederated()).stream()
-                .filter(tp -> tp.getParsedCertificate().getSubjectX500Principal()
-                        .equals(cert.getParsedCertificate().getIssuerX500Principal()))
-                .findFirst();
+                List.of(TrustedPartyEntity.CertificateType.CSCA.name()),
+                List.of(cert.getCountry()),
+                List.of(cert.getDomain()),
+                configProperties.getDid().getIncludeFederated()).stream()
+            .filter(tp -> tp.getParsedCertificate().getSubjectX500Principal()
+                .equals(cert.getParsedCertificate().getIssuerX500Principal()))
+            .findFirst();
     }
 }
