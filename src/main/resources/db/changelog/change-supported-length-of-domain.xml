@@ -14,7 +14,7 @@
     <changeSet id="adapt-domain-length-on-signer-information" author="te">
         <modifyDataType columnName="domain" newDataType="VARCHAR(32)" tableName="signer_information"/>
     </changeSet>
-    <changeSet id="adapt-domain-length-on-trsuted-party" author="te">
+    <changeSet id="adapt-domain-length-on-trusted-party" author="te">
         <modifyDataType columnName="domain" newDataType="VARCHAR(32)" tableName="trusted_party"/>
     </changeSet>
 
