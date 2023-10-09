@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.6.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <changeSet id="change-data-type-for-valuesets" author="te">
+        <modifyDataType columnName="json" newDataType="varchar(1024000)" tableName="valueset"/>
+    </changeSet>
+    <changeSet id="adapt-domain-length-on-trusted-issuer" author="te">
+        <modifyDataType columnName="domain" newDataType="VARCHAR(32)" tableName="trusted_issuer"/>
+    </changeSet>
+    <changeSet id="adapt-domain-length-on-trusted-reference" author="te">
+        <modifyDataType columnName="domain" newDataType="VARCHAR(32)" tableName="trusted_reference"/>
+    </changeSet>
+    <changeSet id="adapt-domain-length-on-signer-information" author="te">
+        <modifyDataType columnName="domain" newDataType="VARCHAR(32)" tableName="signer_information"/>
+    </changeSet>
+    <changeSet id="adapt-domain-length-on-trsuted-party" author="te">
+        <modifyDataType columnName="domain" newDataType="VARCHAR(32)" tableName="trusted_party"/>
+    </changeSet>
+
+</databaseChangeLog>

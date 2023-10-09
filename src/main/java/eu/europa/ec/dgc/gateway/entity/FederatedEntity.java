@@ -41,7 +41,7 @@ public abstract class FederatedEntity {
     @JoinColumn(name = "source_gateway_id", referencedColumnName = "gateway_id")
     private FederationGatewayEntity sourceGateway;
 
-    @Column(name = "domain", columnDefinition = "varchar(10) DEFAULT 'DCC'")
+    @Column(name = "domain", columnDefinition = "varchar(32) DEFAULT 'DCC'")
     String domain = "DCC";
 
     @Column(name = "version", columnDefinition = "int default 1", nullable = false)
