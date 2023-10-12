@@ -53,8 +53,8 @@ public class TrustListService {
      */
     public List<TrustList> getTrustList() {
         return mergeAndConvert(
-            trustedPartyService.getNonFederatedTrustedParties(),
-            signerInformationService.getNonFederatedSignerInformation()
+            trustedPartyService.getNonFederatedEuDscTrustedParties(),
+            signerInformationService.getNonFederatedEuDscSignerInformation()
         );
     }
 
@@ -68,11 +68,11 @@ public class TrustListService {
         if (type == TrustListType.DSC) {
             return mergeAndConvert(
                 Collections.emptyList(),
-                signerInformationService.getNonFederatedSignerInformation(SignerInformationEntity.CertificateType.DSC)
+                signerInformationService.getNonFederatedEuDscSignerInformation()
             );
         } else {
             return mergeAndConvert(
-                trustedPartyService.getNonFederatedTrustedParties(map(type)),
+                trustedPartyService.getNonFederatedEuDscTrustedParties(map(type)),
                 Collections.emptyList()
             );
         }
