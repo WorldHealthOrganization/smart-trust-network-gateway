@@ -86,6 +86,7 @@ dgc:
       - DCC
       - SHC
       - CRED
+      - RACSEL-DDVC
   did:
     enableDidGeneration: false
     contextMapping:
