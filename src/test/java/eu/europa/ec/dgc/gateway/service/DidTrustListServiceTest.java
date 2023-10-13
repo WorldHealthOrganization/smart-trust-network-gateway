@@ -43,6 +43,7 @@ import java.security.KeyPairGenerator;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -56,6 +57,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -63,7 +66,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 
 @SpringBootTest
 public class DidTrustListServiceTest {
-
 
     @Autowired
     ObjectMapper objectMapper;
@@ -111,34 +113,45 @@ public class DidTrustListServiceTest {
         signerInformationRepository.deleteAll();
         federationGatewayRepository.deleteAll();
         trustedIssuerRepository.deleteAll();
+        trustedPartyTestHelper.clear(TrustedPartyEntity.CertificateType.UPLOAD, "DE");
+        trustedPartyTestHelper.clear(TrustedPartyEntity.CertificateType.UPLOAD, "EU");
+        trustedPartyTestHelper.clear(TrustedPartyEntity.CertificateType.CSCA, "DE");
+        trustedPartyTestHelper.clear(TrustedPartyEntity.CertificateType.CSCA, "EU");
+        trustedPartyTestHelper.clear(TrustedPartyEntity.CertificateType.AUTHENTICATION, "DE");
+        trustedPartyTestHelper.clear(TrustedPartyEntity.CertificateType.AUTHENTICATION, "EU");
     }
 
-    @BeforeEach
-    void testData() throws Exception {
+    void testData(CertificateTestUtils.SignerType signerType) throws Exception {
         cleanUp();
 
         federationGateway =
-            new FederationGatewayEntity(null, ZonedDateTime.now(), "gw-id", "endpoint", "kid", "pk", "impl",
-                FederationGatewayEntity.DownloadTarget.FEDERATION, FederationGatewayEntity.Mode.APPEND, "sig", -1L,
-                null, null, 0L, null, null);
+            new FederationGatewayEntity(null, ZonedDateTime.now(), "gw-id", "endpoint",
+                    "kid", "pk", "impl",
+                FederationGatewayEntity.DownloadTarget.FEDERATION, FederationGatewayEntity.Mode.APPEND, "sig",
+                    -1L, null, null, 0L, null,
+                    null);
         federationGateway = federationGatewayRepository.save(federationGateway);
 
-        certUploadDe = trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.UPLOAD, "DE");
-        certUploadEu = trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.UPLOAD, "EU");
-        certCscaDe = trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.CSCA, "DE");
-        certCscaEu = trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.CSCA, "EU");
-        certAuthDe = trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.AUTHENTICATION, "DE");
-        certAuthEu = trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.AUTHENTICATION, "EU");
+        certUploadDe = trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.UPLOAD, "DE", signerType);
+        certUploadEu = trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.UPLOAD, "EU", signerType);
+        certCscaDe = trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.CSCA, "DE", signerType);
+        certCscaEu = trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.CSCA, "EU", signerType);
+        certAuthDe = trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.AUTHENTICATION, "DE", signerType);
+        certAuthEu = trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.AUTHENTICATION, "EU", signerType);
 
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("ec");
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(signerType.getSigningAlgorithm());
         certDscDe =
-            CertificateTestUtils.generateCertificate(keyPairGenerator.generateKeyPair(), "DE", "Test", certCscaDe,
-                trustedPartyTestHelper.getPrivateKey(TrustedPartyEntity.CertificateType.AUTHENTICATION, "DE"));
+            CertificateTestUtils.generateCertificate(keyPairGenerator.generateKeyPair(), "DE",
+                    "Test", certCscaDe,
+                trustedPartyTestHelper.getPrivateKey(TrustedPartyEntity.CertificateType.AUTHENTICATION,
+                        "DE", signerType), signerType);
 
         certDscDeKid = certificateUtils.getCertKid(certDscDe);
         certDscEu =
-            CertificateTestUtils.generateCertificate(keyPairGenerator.generateKeyPair(), "EU", "Test", certCscaEu,
-                trustedPartyTestHelper.getPrivateKey(TrustedPartyEntity.CertificateType.AUTHENTICATION, "EU"));
+            CertificateTestUtils.generateCertificate(keyPairGenerator.generateKeyPair(), "EU",
+                    "Test", certCscaEu,
+                trustedPartyTestHelper.getPrivateKey(TrustedPartyEntity.CertificateType.AUTHENTICATION, "EU", signerType),
+                    signerType);
 
         signerInformationRepository.save(new SignerInformationEntity(
             null,
@@ -164,7 +177,8 @@ public class DidTrustListServiceTest {
             null
         ));
 
-        federatedCertDscEx = CertificateTestUtils.generateCertificate(keyPairGenerator.generateKeyPair(), "EX", "Test");
+        federatedCertDscEx = CertificateTestUtils.generateCertificate(keyPairGenerator.generateKeyPair(), "EX",
+                "Test", signerType);
         SignerInformationEntity federatedDscEntity = new SignerInformationEntity(
             null,
             ZonedDateTime.now(),
@@ -184,8 +198,14 @@ public class DidTrustListServiceTest {
         trustedIssuerRepository.save(trustedIssuerTestHelper.createTrustedIssuer("XY", "DCC"));
     }
 
-    @Test
-    void testTrustList() throws IOException, CertificateEncodingException {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void testTrustList(boolean isEcAlgorithm) throws Exception {
+        if (isEcAlgorithm) {
+            testData(CertificateTestUtils.SignerType.EC);
+        } else {
+            testData(CertificateTestUtils.SignerType.RSA);
+        }
         ArgumentCaptor<byte[]> uploadArgumentCaptor = ArgumentCaptor.forClass(byte[].class);
         doNothing().when(didUploaderMock).uploadDid(uploadArgumentCaptor.capture());
 
@@ -237,12 +257,22 @@ public class DidTrustListServiceTest {
 
         LinkedHashMap publicKeyJwk = (LinkedHashMap) jsonNode.get("publicKeyJwk");
 
-        Assertions.assertEquals(((ECPublicKey) dsc.getPublicKey()).getW().getAffineX(),
-            new BigInteger(Base64.getDecoder().decode(publicKeyJwk.get("x").toString())));
-        Assertions.assertEquals(((ECPublicKey) dsc.getPublicKey()).getW().getAffineY(),
-            new BigInteger(Base64.getDecoder().decode(publicKeyJwk.get("y").toString())));
-        Assertions.assertEquals("EC", publicKeyJwk.get("kty").toString());
-        Assertions.assertEquals("P-256", publicKeyJwk.get("crv").toString());
+        if (dsc.getPublicKey().getAlgorithm().equals(CertificateTestUtils.SignerType.EC.getSigningAlgorithm())) {
+            Assertions.assertEquals(((ECPublicKey) dsc.getPublicKey()).getW().getAffineX(),
+                    new BigInteger(Base64.getDecoder().decode(publicKeyJwk.get("x").toString())));
+            Assertions.assertEquals(((ECPublicKey) dsc.getPublicKey()).getW().getAffineY(),
+                    new BigInteger(Base64.getDecoder().decode(publicKeyJwk.get("y").toString())));
+            Assertions.assertEquals(CertificateTestUtils.SignerType.EC.getSigningAlgorithm(),
+                    publicKeyJwk.get("kty").toString());
+            Assertions.assertEquals("P-256", publicKeyJwk.get("crv").toString());
+        } else {
+            Assertions.assertEquals(((RSAPublicKey) dsc.getPublicKey()).getPublicExponent(),
+                    new BigInteger(Base64.getDecoder().decode(publicKeyJwk.get("e").toString())));
+            Assertions.assertEquals(((RSAPublicKey) dsc.getPublicKey()).getModulus(),
+                    new BigInteger(Base64.getDecoder().decode(publicKeyJwk.get("n").toString())));
+            Assertions.assertEquals(CertificateTestUtils.SignerType.RSA.getSigningAlgorithm(),
+                    publicKeyJwk.get("kty").toString());
+        }
         ArrayList<String> x5c = ((ArrayList<String>) publicKeyJwk.get("x5c"));
         Assertions.assertEquals(Base64.getEncoder().encodeToString(dsc.getEncoded()), x5c.get(0));
         if (csca != null) {
