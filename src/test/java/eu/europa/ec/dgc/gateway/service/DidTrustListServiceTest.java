@@ -37,8 +37,10 @@ import eu.europa.ec.dgc.gateway.testdata.CertificateTestUtils;
 import eu.europa.ec.dgc.gateway.testdata.TrustedIssuerTestHelper;
 import eu.europa.ec.dgc.gateway.testdata.TrustedPartyTestHelper;
 import eu.europa.ec.dgc.utils.CertificateUtils;
-import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPairGenerator;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
@@ -50,13 +52,13 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
+
+import foundation.identity.jsonld.JsonLDObject;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
@@ -218,12 +220,12 @@ public class DidTrustListServiceTest {
         Assertions.assertEquals("b", parsed.getController());
         Assertions.assertEquals(6, parsed.getVerificationMethod().size());
 
-        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c" + certDscDeKid),
-            certDscDeKid, certDscDe, certCscaDe);
-        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "ckid2"),
-            "kid2", certDscEu, certCscaEu);
-        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "ckid3"),
-            "kid3", federatedCertDscEx, null);
+        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c" + ":DE" + "#" + URLEncoder.encode(certDscDeKid, StandardCharsets.UTF_8)),
+            certDscDeKid, certDscDe, certCscaDe, "DE");
+        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c:EU#kid2"),
+            "kid2", certDscEu, certCscaEu, "EU");
+        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c:EX#kid3"),
+            "kid3", federatedCertDscEx, null, "EX");
 
         Assertions.assertTrue(parsed.getVerificationMethod().contains("did:trusted:DE:issuer"));
         Assertions.assertTrue(parsed.getVerificationMethod().contains("did:trusted:EU:issuer"));
@@ -238,7 +240,13 @@ public class DidTrustListServiceTest {
         Assertions.assertEquals("e", parsed.getProof().getVerificationMethod());
         Assertions.assertNotNull(parsed.getProof().getJws());
         Assertions.assertNotEquals("", parsed.getProof().getJws());
+
+        //JSON should start with "@context" due to https://www.w3.org/TR/json-ld11-streaming/#key-ordering-required
+        String json = JsonLDObject.fromJson(objectMapper.writeValueAsString(parsed)).toJson();
+        String first10Characters = json.substring(0, Math.min(10, json.length()));
+        Assertions.assertTrue(first10Characters.contains("@context"));
     }
+
 
     private Object getVerificationMethodByKid(List<Object> verificationMethods, String kid) {
         return verificationMethods.stream()
@@ -248,12 +256,12 @@ public class DidTrustListServiceTest {
             .orElseGet(() -> Assertions.fail("Could not find VerificationMethod with KID " + kid));
     }
 
-    private void assertVerificationMethod(Object in, String kid, X509Certificate dsc, X509Certificate csca)
-        throws CertificateEncodingException {
+    private void assertVerificationMethod(Object in, String kid, X509Certificate dsc, X509Certificate csca, String country)
+            throws CertificateEncodingException, UnsupportedEncodingException {
         LinkedHashMap jsonNode = (LinkedHashMap) in;
         Assertions.assertEquals("JsonWebKey2020", jsonNode.get("type"));
-        Assertions.assertEquals("d", jsonNode.get("controller"));
-        Assertions.assertEquals("c" + kid, jsonNode.get("id"));
+        Assertions.assertEquals("d" + ":" + country, jsonNode.get("controller"));
+        Assertions.assertEquals("c" + ":" + country + "#" + URLEncoder.encode(kid, StandardCharsets.UTF_8), jsonNode.get("id"));
 
         LinkedHashMap publicKeyJwk = (LinkedHashMap) jsonNode.get("publicKeyJwk");
 
