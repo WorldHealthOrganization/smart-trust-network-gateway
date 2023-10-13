@@ -65,9 +65,11 @@ public class TrustedPartyService {
      *
      * @return List holding the found certificates.
      */
-    public List<TrustedPartyEntity> getNonFederatedTrustedParties() {
+    public List<TrustedPartyEntity> getNonFederatedEuDscTrustedParties() {
 
-        return trustedPartyRepository.getBySourceGatewayIsNullAndDomainIs("DCC")
+        return trustedPartyRepository.getBySourceGatewayIsNullAndDomainIsAndCertificateTypeIsIn("DCC",
+                List.of(TrustedPartyEntity.CertificateType.UPLOAD, TrustedPartyEntity.CertificateType.AUTHENTICATION,
+                    TrustedPartyEntity.CertificateType.CSCA))
             .stream()
             .filter(this::validateCertificateIntegrity)
             .collect(Collectors.toList());
@@ -79,7 +81,7 @@ public class TrustedPartyService {
      * @param type type to filter for.
      * @return List holding the found certificates.
      */
-    public List<TrustedPartyEntity> getNonFederatedTrustedParties(TrustedPartyEntity.CertificateType type) {
+    public List<TrustedPartyEntity> getNonFederatedEuDscTrustedParties(TrustedPartyEntity.CertificateType type) {
 
         return trustedPartyRepository.getByCertificateTypeAndSourceGatewayIsNullAndDomainIs(type, "DCC")
             .stream()

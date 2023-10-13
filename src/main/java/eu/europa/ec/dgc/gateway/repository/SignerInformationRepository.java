@@ -30,8 +30,6 @@ import org.springframework.data.repository.query.Param;
 
 public interface SignerInformationRepository extends JpaRepository<SignerInformationEntity, Long> {
 
-    List<SignerInformationEntity> getAllBySourceGatewayIsNullAndDomainIs(String domain);
-
     @Query("SELECT s FROM SignerInformationEntity s WHERE "
         + "(:ignoreGroup = true OR s.certificateType IN (:group)) AND "
         + "(:ignoreCountry = true OR s.country IN (:country)) AND "
