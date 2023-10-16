@@ -21,10 +21,12 @@
 package eu.europa.ec.dgc.gateway.restapi.dto.did;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import java.util.List;
 import lombok.Data;
 
 @Data
+@JsonPropertyOrder({"@context", "id", "controller", "verificationMethod"})
 public class DidTrustListDto {
 
     @JsonProperty("@context")

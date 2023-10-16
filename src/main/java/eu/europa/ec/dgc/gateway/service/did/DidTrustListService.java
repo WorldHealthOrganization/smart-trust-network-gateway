@@ -37,7 +37,9 @@ import foundation.identity.jsonld.JsonLDObject;
 import info.weboftrust.ldsignatures.jsonld.LDSecurityKeywords;
 import info.weboftrust.ldsignatures.signer.JsonWebSignature2020LdSigner;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.PublicKey;
 import java.security.cert.CertificateEncodingException;
@@ -63,6 +65,10 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @ConditionalOnProperty("dgc.did.enableDidGeneration")
 public class DidTrustListService {
+
+    private static final String SEPARATOR_COLON = ":";
+
+    private static final String SEPARATOR_FRAGMENT = "#";
 
     private static final List<String> DID_CONTEXTS = List.of(
         "https://www.w3.org/ns/did/v1",
@@ -181,7 +187,8 @@ public class DidTrustListService {
 
     private void addTrustListEntry(DidTrustListDto trustList,
                                    TrustedCertificateTrustList cert,
-                                   DidTrustListEntryDto.PublicKeyJwk publicKeyJwk) throws CertificateEncodingException {
+                                   DidTrustListEntryDto.PublicKeyJwk publicKeyJwk)
+            throws CertificateEncodingException, UnsupportedEncodingException {
         Optional<TrustedCertificateTrustList> csca = searchForIssuer(cert);
 
         if (csca.isPresent()) {
@@ -191,8 +198,13 @@ public class DidTrustListService {
 
         DidTrustListEntryDto trustListEntry = new DidTrustListEntryDto();
         trustListEntry.setType("JsonWebKey2020");
-        trustListEntry.setId(configProperties.getDid().getTrustListIdPrefix() + cert.getKid());
-        trustListEntry.setController(configProperties.getDid().getTrustListControllerPrefix());
+        trustListEntry.setId(configProperties.getDid().getTrustListIdPrefix()
+                + SEPARATOR_COLON
+                + cert.getCountry()
+                + SEPARATOR_FRAGMENT
+                + URLEncoder.encode(cert.getKid(), StandardCharsets.UTF_8));
+        trustListEntry.setController(configProperties.getDid().getTrustListControllerPrefix()
+                + SEPARATOR_COLON + cert.getCountry());
         trustListEntry.setPublicKeyJwk(publicKeyJwk);
 
         trustList.getVerificationMethod().add(trustListEntry);
