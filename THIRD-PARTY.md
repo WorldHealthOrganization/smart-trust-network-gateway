@@ -14,13 +14,14 @@ ThirdParty Licenses
 | ch.qos.logback:logback-classic:1.4.8 | Eclipse Public License - v 1.0 GNU Lesser General Public License |
 | ch.qos.logback:logback-core:1.4.8 | Eclipse Public License - v 1.0 GNU Lesser General Public License |
 | com.apicatalog:titanium-json-ld:1.1.0 | Apache License, Version 2.0 |
-| com.azure:azure-core:1.34.0 | The MIT License (MIT) |
-| com.azure:azure-core-http-netty:1.12.7 | The MIT License (MIT) |
-| com.azure:azure-identity:1.7.0 | The MIT License (MIT) |
-| com.azure:azure-security-keyvault-keys:4.5.2 | The MIT License (MIT) |
-| com.azure:azure-storage-blob:12.20.1 | The MIT License (MIT) |
-| com.azure:azure-storage-common:12.19.1 | The MIT License (MIT) |
-| com.azure:azure-storage-internal-avro:12.5.1 | The MIT License (MIT) |
+| com.azure:azure-core:1.43.0 | The MIT License (MIT) |
+| com.azure:azure-core-http-netty:1.13.7 | The MIT License (MIT) |
+| com.azure:azure-identity:1.10.1 | The MIT License (MIT) |
+| com.azure:azure-json:1.1.0 | The MIT License (MIT) |
+| com.azure:azure-security-keyvault-keys:4.7.0 | The MIT License (MIT) |
+| com.azure:azure-storage-blob:12.24.0 | The MIT License (MIT) |
+| com.azure:azure-storage-common:12.23.0 | The MIT License (MIT) |
+| com.azure:azure-storage-internal-avro:12.9.0 | The MIT License (MIT) |
 | com.damnhandy:handy-uri-templates:2.1.8 | The Apache Software License, Version 2.0 |
 | com.danubetech:key-formats-java:1.2.0 | Unknown license |
 | com.fasterxml:classmate:1.5.1 | Apache License, Version 2.0 |
@@ -32,7 +33,7 @@ ThirdParty Licenses
 | com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.14.3 | The Apache Software License, Version 2.0 |
 | com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.14.3 | The Apache Software License, Version 2.0 |
 | com.fasterxml.jackson.module:jackson-module-parameter-names:2.14.3 | The Apache Software License, Version 2.0 |
-| com.fasterxml.woodstox:woodstox-core:6.4.0 | The Apache License, Version 2.0 |
+| com.fasterxml.woodstox:woodstox-core:6.5.0 | The Apache License, Version 2.0 |
 | com.github.everit-org.json-schema:org.everit.json.schema:1.14.2 | Apache License, Version 2.0 |
 | com.github.jnr:jffi:1.2.9 | The Apache Software License, Version 2.0 |
 | com.github.jnr:jnr-ffi:2.0.5 | The Apache Software License, Version 2.0 |
@@ -50,13 +51,13 @@ ThirdParty Licenses
 | com.google.re2j:re2j:1.6 | Go License |
 | com.h2database:h2:2.2.220 | EPL 1.0 MPL 2.0 |
 | com.jayway.jsonpath:json-path:2.7.0 | The Apache Software License, Version 2.0 |
-| com.microsoft.azure:msal4j:1.13.3 | MIT License |
-| com.microsoft.azure:msal4j-persistence-extension:1.1.0 | MIT License |
+| com.microsoft.azure:msal4j:1.13.9 | MIT License |
+| com.microsoft.azure:msal4j-persistence-extension:1.2.0 | MIT License |
 | com.mysql:mysql-connector-j:8.0.33 | The GNU General Public License, v2 with Universal FOSS Exception, v1.0 |
 | com.nimbusds:content-type:2.2 | The Apache Software License, Version 2.0 |
-| com.nimbusds:lang-tag:1.6 | The Apache Software License, Version 2.0 |
+| com.nimbusds:lang-tag:1.7 | The Apache Software License, Version 2.0 |
 | com.nimbusds:nimbus-jose-jwt:9.9 | The Apache Software License, Version 2.0 |
-| com.nimbusds:oauth2-oidc-sdk:9.35 | Apache License, version 2.0 |
+| com.nimbusds:oauth2-oidc-sdk:10.7.1 | Apache License, version 2.0 |
 | com.opencsv:opencsv:5.7.1 | Apache 2 |
 | com.squareup.okhttp3:okhttp:4.10.0 | The Apache Software License, Version 2.0 |
 | com.squareup.okio:okio-jvm:3.0.0 | The Apache Software License, Version 2.0 |
@@ -128,7 +129,7 @@ ThirdParty Licenses
 | joda-time:joda-time:2.10.2 | Apache 2 |
 | net.bytebuddy:byte-buddy:1.12.23 | Apache License, Version 2.0 |
 | net.bytebuddy:byte-buddy-agent:1.12.23 | Apache License, Version 2.0 |
-| net.java.dev.jna:jna:5.5.0 | Apache License v2.0 LGPL, version 2.1 |
+| net.java.dev.jna:jna:5.13.0 | Apache-2.0 LGPL-2.1-or-later |
 | net.java.dev.jna:jna-platform:5.6.0 | Apache License v2.0 LGPL, version 2.1 |
 | net.javacrumbs.shedlock:shedlock-core:5.2.0 | The Apache Software License, Version 2.0 |
 | net.javacrumbs.shedlock:shedlock-provider-jdbc-template:5.2.0 | The Apache Software License, Version 2.0 |
