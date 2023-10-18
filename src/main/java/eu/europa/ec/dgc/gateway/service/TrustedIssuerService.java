@@ -232,7 +232,7 @@ public class TrustedIssuerService {
         return entity.getCountry() + HASH_SEPARATOR
                 + entity.getName() + HASH_SEPARATOR
                 + entity.getUrl() + HASH_SEPARATOR
-                + entity.getUrlType().name() + HASH_SEPARATOR;
+                + entity.getUrlType().name();
     }
 }
 

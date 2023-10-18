@@ -54,6 +54,6 @@ public class TrustedIssuerTestHelper {
         return entity.getCountry() + ";"
             + entity.getName() + ";"
             + entity.getUrl() + ";"
-            + entity.getUrlType().name() + ";";
+            + entity.getUrlType().name();
     }
 }
