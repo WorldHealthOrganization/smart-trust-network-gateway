@@ -162,7 +162,8 @@ public class TrustedIssuerService {
         // verify signature
         SignedStringMessageParser parser = new SignedStringMessageParser(
             trustedIssuerEntity.getSignature(),
-            Base64.getEncoder().encodeToString(getHashData(trustedIssuerEntity).getBytes(StandardCharsets.UTF_8)));
+            Base64.getEncoder().encodeToString(
+                    getHashData(trustedIssuerEntity).getBytes(StandardCharsets.UTF_8)));
 
         if (parser.getParserState() != SignedMessageParser.ParserState.SUCCESS) {
             DgcMdc.put(MDC_PROP_PARSER_STATE, parser.getParserState().name());
@@ -227,12 +228,11 @@ public class TrustedIssuerService {
         return trustedIssuerEntity;
     }
 
-
     private String getHashData(TrustedIssuerEntity entity) {
-        return entity.getUuid() + HASH_SEPARATOR
-            + entity.getCountry() + HASH_SEPARATOR
-            + entity.getName() + HASH_SEPARATOR
-            + entity.getUrl() + HASH_SEPARATOR
-            + entity.getUrlType().name() + HASH_SEPARATOR;
+        return entity.getCountry() + HASH_SEPARATOR
+                + entity.getName() + HASH_SEPARATOR
+                + entity.getUrl() + HASH_SEPARATOR
+                + entity.getUrlType().name() + HASH_SEPARATOR;
     }
 }
+
