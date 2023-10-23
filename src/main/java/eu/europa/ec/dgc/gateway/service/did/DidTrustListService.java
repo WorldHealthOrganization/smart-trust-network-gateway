@@ -113,24 +113,23 @@ public class DidTrustListService {
         }
 
         List<String> countries = trustedPartyService.getCountryList();
-        List<String> countryAsList = null;
-        String countryTrustList = null;
+
         for (String country : countries) {
+            String countryTrustList = null;
+            List<String> countryAsList = List.of(country);
             String countryAsSubcontainer = getCountryAsLowerCaseAlpha3(country);
             if (countryAsSubcontainer != null) {
-                countryAsList = List.of(country);
                 try {
                     countryTrustList = generateTrustList(countryAsList);
                 } catch (Exception e) {
                     log.error("Failed to generate DID-TrustList for country {} : {}", country, e.getMessage());
-                    return;
+                    continue;
                 }
 
                 try {
                     didUploader.uploadDid(countryAsSubcontainer, countryTrustList.getBytes(StandardCharsets.UTF_8));
                 } catch (Exception e) {
                     log.error("Failed to Upload DID-TrustList for country {} : {}", country, e.getMessage());
-                    return;
                 }
             }
         }
@@ -162,6 +161,14 @@ public class DidTrustListService {
         trustList.setController(configProperties.getDid().getDidController());
         trustList.setVerificationMethod(new ArrayList<>());
 
+        if (countries != null && !countries.isEmpty()) {
+            trustList.setId(configProperties.getDid().getDidId()
+                    + SEPARATOR_COLON
+                    + getCountryAsLowerCaseAlpha3(countries.get(0)));
+            trustList.setController(configProperties.getDid().getDidController()
+                    + SEPARATOR_COLON
+                    + getCountryAsLowerCaseAlpha3(countries.get(0)));
+        }
 
         // Add DSC
         List<TrustedCertificateTrustList> certs = trustListService.getTrustedCertificateTrustList(
