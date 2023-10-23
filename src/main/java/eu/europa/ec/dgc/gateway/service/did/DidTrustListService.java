@@ -94,7 +94,7 @@ public class DidTrustListService {
     /**
      * Create and upload DID Document holding Uploaded DSC and Trusted Issuer.
      */
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "* */5 * * * *")
     @SchedulerLock(name = "didTrustListGenerator")
     public void job() {
         String trustList;
