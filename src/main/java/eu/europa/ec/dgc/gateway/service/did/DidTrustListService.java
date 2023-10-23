@@ -32,6 +32,7 @@ import eu.europa.ec.dgc.gateway.restapi.dto.did.DidTrustListDto;
 import eu.europa.ec.dgc.gateway.restapi.dto.did.DidTrustListEntryDto;
 import eu.europa.ec.dgc.gateway.service.TrustListService;
 import eu.europa.ec.dgc.gateway.service.TrustedIssuerService;
+import eu.europa.ec.dgc.gateway.service.TrustedPartyService;
 import foundation.identity.jsonld.ConfigurableDocumentLoader;
 import foundation.identity.jsonld.JsonLDObject;
 import info.weboftrust.ldsignatures.jsonld.LDSecurityKeywords;
@@ -50,7 +51,9 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.MissingResourceException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -86,6 +89,8 @@ public class DidTrustListService {
 
     private final ObjectMapper objectMapper;
 
+    private final TrustedPartyService trustedPartyService;
+
     /**
      * Create and upload DID Document holding Uploaded DSC and Trusted Issuer.
      */
@@ -94,7 +99,7 @@ public class DidTrustListService {
     public void job() {
         String trustList;
         try {
-            trustList = generateTrustList();
+            trustList = generateTrustList(null);
         } catch (Exception e) {
             log.error("Failed to generate DID-TrustList: {}", e.getMessage());
             return;
@@ -106,10 +111,51 @@ public class DidTrustListService {
             log.error("Failed to Upload DID-TrustList: {}", e.getMessage());
             return;
         }
+
+        List<String> countries = trustedPartyService.getCountryList();
+        List<String> countryAsList = null;
+        String countryTrustList = null;
+        for (String country : countries) {
+            String countryAsSubcontainer = getCountryAsLowerCaseAlpha3(country);
+            if (countryAsSubcontainer != null) {
+                countryAsList = List.of(country);
+                try {
+                    countryTrustList = generateTrustList(countryAsList);
+                } catch (Exception e) {
+                    log.error("Failed to generate DID-TrustList for country {} : {}", country, e.getMessage());
+                    return;
+                }
+
+                try {
+                    didUploader.uploadDid(countryAsSubcontainer, countryTrustList.getBytes(StandardCharsets.UTF_8));
+                } catch (Exception e) {
+                    log.error("Failed to Upload DID-TrustList for country {} : {}", country, e.getMessage());
+                    return;
+                }
+            }
+        }
+
         log.info("Finished DID Export Process");
     }
 
-    private String generateTrustList() throws Exception {
+    private String getCountryAsLowerCaseAlpha3(String country) {
+        String countryLowerCaseAlpha3 = null;
+        if (country != null & country.length() == 2) {
+            Locale locale = new Locale("en", country);
+            try {
+                countryLowerCaseAlpha3 = locale.getISO3Country().toLowerCase(locale);
+            } catch (MissingResourceException e) {
+                countryLowerCaseAlpha3 = ("X" + country).toLowerCase();
+                //TODO: replace with mapping config for virtual countries
+                log.error("Country Code to alpha 3 conversion issue for country {} : {}",
+                        country,
+                        e.getMessage());
+            }
+        }
+        return countryLowerCaseAlpha3;
+    }
+
+    private String generateTrustList(List<String> countries) throws Exception {
         DidTrustListDto trustList = new DidTrustListDto();
         trustList.setContext(DID_CONTEXTS);
         trustList.setId(configProperties.getDid().getDidId());
@@ -120,7 +166,7 @@ public class DidTrustListService {
         // Add DSC
         List<TrustedCertificateTrustList> certs = trustListService.getTrustedCertificateTrustList(
             SignerInformationEntity.CertificateType.stringValues(),
-            null,
+            countries,
             null,
             configProperties.getDid().getIncludeFederated()
         );
@@ -146,7 +192,7 @@ public class DidTrustListService {
 
         // Add TrustedIssuer
         trustedIssuerService.search(
-                null, null, configProperties.getDid().getIncludeFederated()).stream()
+                null, countries, configProperties.getDid().getIncludeFederated()).stream()
             .filter(trustedIssuer -> trustedIssuer.getUrlType() == TrustedIssuerEntity.UrlType.DID)
             .forEach(trustedIssuer -> trustList.getVerificationMethod().add(trustedIssuer.getUrl()));
 
@@ -200,11 +246,11 @@ public class DidTrustListService {
         trustListEntry.setType("JsonWebKey2020");
         trustListEntry.setId(configProperties.getDid().getTrustListIdPrefix()
                 + SEPARATOR_COLON
-                + cert.getCountry()
+                + getCountryAsLowerCaseAlpha3(cert.getCountry())
                 + SEPARATOR_FRAGMENT
                 + URLEncoder.encode(cert.getKid(), StandardCharsets.UTF_8));
         trustListEntry.setController(configProperties.getDid().getTrustListControllerPrefix()
-                + SEPARATOR_COLON + cert.getCountry());
+                + SEPARATOR_COLON + getCountryAsLowerCaseAlpha3(cert.getCountry()));
         trustListEntry.setPublicKeyJwk(publicKeyJwk);
 
         trustList.getVerificationMethod().add(trustListEntry);

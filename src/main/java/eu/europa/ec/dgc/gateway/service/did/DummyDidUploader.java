@@ -34,4 +34,9 @@ public class DummyDidUploader implements DidUploader {
         log.info("Uploaded {} bytes", content.length);
     }
 
+    @Override
+    public void uploadDid(String subContainer, byte[] content) {
+        log.info("Uploaded {} bytes to subContainer {}", content.length, subContainer);
+    }
+
 }

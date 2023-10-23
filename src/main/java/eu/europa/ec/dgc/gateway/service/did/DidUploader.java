@@ -24,4 +24,6 @@ public interface DidUploader {
 
     void uploadDid(byte[] content);
 
+    void uploadDid(String subContainer, byte[] content);
+
 }
