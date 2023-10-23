@@ -87,6 +87,8 @@ dgc:
       - SHC
       - CRED
       - RACSEL-DDVC
+  trustlist:
+    cron: "* */5 * * * *"
   did:
     enableDidGeneration: false
     contextMapping:

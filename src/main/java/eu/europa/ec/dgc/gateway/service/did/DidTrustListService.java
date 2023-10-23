@@ -20,23 +20,6 @@
 
 package eu.europa.ec.dgc.gateway.service.did;
 
-import com.apicatalog.jsonld.document.JsonDocument;
-import com.danubetech.keyformats.crypto.ByteSigner;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.europa.ec.dgc.gateway.config.DgcConfigProperties;
-import eu.europa.ec.dgc.gateway.entity.SignerInformationEntity;
-import eu.europa.ec.dgc.gateway.entity.TrustedIssuerEntity;
-import eu.europa.ec.dgc.gateway.entity.TrustedPartyEntity;
-import eu.europa.ec.dgc.gateway.model.TrustedCertificateTrustList;
-import eu.europa.ec.dgc.gateway.restapi.dto.did.DidTrustListDto;
-import eu.europa.ec.dgc.gateway.restapi.dto.did.DidTrustListEntryDto;
-import eu.europa.ec.dgc.gateway.service.TrustListService;
-import eu.europa.ec.dgc.gateway.service.TrustedIssuerService;
-import eu.europa.ec.dgc.gateway.service.TrustedPartyService;
-import foundation.identity.jsonld.ConfigurableDocumentLoader;
-import foundation.identity.jsonld.JsonLDObject;
-import info.weboftrust.ldsignatures.jsonld.LDSecurityKeywords;
-import info.weboftrust.ldsignatures.signer.JsonWebSignature2020LdSigner;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -55,13 +38,33 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+
 import org.jetbrains.annotations.NotNull;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
+import com.apicatalog.jsonld.document.JsonDocument;
+import com.danubetech.keyformats.crypto.ByteSigner;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import eu.europa.ec.dgc.gateway.config.DgcConfigProperties;
+import eu.europa.ec.dgc.gateway.entity.SignerInformationEntity;
+import eu.europa.ec.dgc.gateway.entity.TrustedIssuerEntity;
+import eu.europa.ec.dgc.gateway.entity.TrustedPartyEntity;
+import eu.europa.ec.dgc.gateway.model.TrustedCertificateTrustList;
+import eu.europa.ec.dgc.gateway.restapi.dto.did.DidTrustListDto;
+import eu.europa.ec.dgc.gateway.restapi.dto.did.DidTrustListEntryDto;
+import eu.europa.ec.dgc.gateway.service.TrustListService;
+import eu.europa.ec.dgc.gateway.service.TrustedIssuerService;
+import eu.europa.ec.dgc.gateway.service.TrustedPartyService;
+import foundation.identity.jsonld.ConfigurableDocumentLoader;
+import foundation.identity.jsonld.JsonLDObject;
+import info.weboftrust.ldsignatures.jsonld.LDSecurityKeywords;
+import info.weboftrust.ldsignatures.signer.JsonWebSignature2020LdSigner;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 
 @Slf4j
 @Service
@@ -94,7 +97,7 @@ public class DidTrustListService {
     /**
      * Create and upload DID Document holding Uploaded DSC and Trusted Issuer.
      */
-    @Scheduled(cron = "* */5 * * * *")
+    @Scheduled(cron = "${dgc.trustlist.cron}")
     @SchedulerLock(name = "didTrustListGenerator")
     public void job() {
         String trustList;
