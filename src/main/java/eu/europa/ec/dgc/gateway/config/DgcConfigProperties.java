@@ -52,6 +52,8 @@ public class DgcConfigProperties {
 
     private CloudmersiveConfig cloudmersive = new CloudmersiveConfig();
 
+    private CountryCodeMap countryCodeMap = new CountryCodeMap();
+
     @Getter
     @Setter
     public static class DidConfig {
@@ -169,5 +171,11 @@ public class DgcConfigProperties {
     @Setter
     public static class SignerInformation {
         private int deleteThreshold = 14;
+    }
+
+    @Getter
+    @Setter
+    public static class CountryCodeMap {
+        private Map<String, String> virtualCountries = new HashMap<>();
     }
 }

@@ -141,21 +141,28 @@ public class DidTrustListService {
 
     private String getCountryAsLowerCaseAlpha3(String country) {
         String countryLowerCaseAlpha3 = null;
+
         if (country != null && country.length() == 2) {
-            Locale locale = new Locale("en", country);
-            try {
-                countryLowerCaseAlpha3 = locale.getISO3Country().toLowerCase(locale);
-            } catch (MissingResourceException e) {
-                countryLowerCaseAlpha3 = ("X" + country).toLowerCase();
-                if (country.equalsIgnoreCase("XL")) {
-                    countryLowerCaseAlpha3 = "xcl";
+
+            countryLowerCaseAlpha3 = configProperties.getCountryCodeMap()
+                    .getVirtualCountries().get(country);
+
+
+            if (countryLowerCaseAlpha3 == null) {
+                Locale locale = new Locale("en", country);
+                try {
+                    countryLowerCaseAlpha3 = locale.getISO3Country().toLowerCase(locale);
+                } catch (MissingResourceException e) {
+                    log.error("Country Code to alpha 3 conversion issue for country {} : {}",
+                            country,
+                            e.getMessage());
                 }
-                //TODO: replace with mapping config for virtual countries
-                log.error("Country Code to alpha 3 conversion issue for country {} : {}",
-                        country,
-                        e.getMessage());
+            } else {
+                countryLowerCaseAlpha3 = countryLowerCaseAlpha3.toLowerCase();
             }
+
         }
+
         return countryLowerCaseAlpha3;
     }
 

@@ -58,3 +58,11 @@ dgc:
     apiKey: 0a0a0a0a-0a0a-0a0a-0a0a-0a0a0a0a0a0a
     enabled: true
     url: https://api.cloudmersive.com
+  countryCodeMap:
+    virtualCountries:
+      XA: XXA
+      XB: XXB
+      XO: XXO
+      XL: XCL
+      EU: XEU
+      EX: XEX
