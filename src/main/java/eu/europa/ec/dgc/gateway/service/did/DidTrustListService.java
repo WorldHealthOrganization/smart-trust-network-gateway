@@ -64,7 +64,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -140,30 +139,24 @@ public class DidTrustListService {
     }
 
     private String getCountryAsLowerCaseAlpha3(String country) {
-        String countryLowerCaseAlpha3 = null;
-
-        if (country != null && country.length() == 2) {
-
-            countryLowerCaseAlpha3 = configProperties.getCountryCodeMap()
-                    .getVirtualCountries().get(country);
-
-
-            if (countryLowerCaseAlpha3 == null) {
-                Locale locale = new Locale("en", country);
-                try {
-                    countryLowerCaseAlpha3 = locale.getISO3Country().toLowerCase(locale);
-                } catch (MissingResourceException e) {
-                    log.error("Country Code to alpha 3 conversion issue for country {} : {}",
-                            country,
-                            e.getMessage());
-                }
-            } else {
-                countryLowerCaseAlpha3 = countryLowerCaseAlpha3.toLowerCase();
-            }
-
+        if (country == null || country.length() != 2 && country.length() != 3) {
+            return null;
+        } else if (country.length() == 3) {
+            return country;
         }
 
-        return countryLowerCaseAlpha3;
+        return configProperties.getCountryCodeMap().getVirtualCountries()
+            .compute(country, (alpha2, alpha3) -> {
+                if (alpha3 != null) return alpha3.toLowerCase();
+
+                try {
+                    return new Locale("en", alpha2).getISO3Country().toLowerCase();
+                } catch (MissingResourceException e) {
+                    log.error("Country Code to alpha 3 conversion issue for country {} : {}",
+                        country, e.getMessage());
+                    return null;
+                }
+            });
     }
 
     private String generateTrustList(List<String> countries) throws Exception {
