@@ -142,12 +142,14 @@ public class DidTrustListService {
         if (country == null || country.length() != 2 && country.length() != 3) {
             return null;
         } else if (country.length() == 3) {
-            return country;
+            return country.toLowerCase();
         }
 
         return configProperties.getCountryCodeMap().getVirtualCountries()
             .compute(country, (alpha2, alpha3) -> {
-                if (alpha3 != null) return alpha3.toLowerCase();
+                if (alpha3 != null) {
+                    return alpha3.toLowerCase();
+                }
 
                 try {
                     return new Locale("en", alpha2).getISO3Country().toLowerCase();
