@@ -220,12 +220,12 @@ public class DidTrustListServiceTest {
         Assertions.assertEquals("b", parsed.getController());
         Assertions.assertEquals(6, parsed.getVerificationMethod().size());
 
-        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c" + ":DE" + "#" + URLEncoder.encode(certDscDeKid, StandardCharsets.UTF_8)),
-            certDscDeKid, certDscDe, certCscaDe, "DE");
-        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c:EU#kid2"),
-            "kid2", certDscEu, certCscaEu, "EU");
-        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c:EX#kid3"),
-            "kid3", federatedCertDscEx, null, "EX");
+        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c" + ":deu" + "#" + URLEncoder.encode(certDscDeKid, StandardCharsets.UTF_8)),
+            certDscDeKid, certDscDe, certCscaDe, "deu");
+        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c:xeu#kid2"),
+            "kid2", certDscEu, certCscaEu, "xeu");
+        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c:xex#kid3"),
+            "kid3", federatedCertDscEx, null, "xex");
 
         Assertions.assertTrue(parsed.getVerificationMethod().contains("did:trusted:DE:issuer"));
         Assertions.assertTrue(parsed.getVerificationMethod().contains("did:trusted:EU:issuer"));

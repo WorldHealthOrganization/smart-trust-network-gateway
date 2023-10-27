@@ -603,7 +603,7 @@ class ValidationRuleIntegrationTest {
         validationRule.setValidFrom(ZonedDateTime.now().plus(3, ChronoUnit.DAYS));
         validationRule.setValidTo(ZonedDateTime.now()
           .plus(6, ChronoUnit.DAYS)
-          .minus(1, ChronoUnit.SECONDS));
+          .minus(2, ChronoUnit.HOURS));
 
         String payload = new SignedStringMessageBuilder()
           .withSigningCertificate(certificateUtils.convertCertificate(signerCertificate), signerPrivateKey)
