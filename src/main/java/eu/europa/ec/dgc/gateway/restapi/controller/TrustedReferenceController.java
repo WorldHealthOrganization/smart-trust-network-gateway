@@ -78,7 +78,7 @@ public class TrustedReferenceController {
             @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEMA_HASH),
             @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEMA_DISTINGUISH_NAME)
         },
-        tags = {"Trusted Reference"},
+        tags = {"Trusted Reference", "GDHCN"},
         summary = "Upload a new trusted reference",
         description = "Endpoint to upload a new trusted reference.",
         requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -146,7 +146,7 @@ public class TrustedReferenceController {
             @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEMA_HASH),
             @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEMA_DISTINGUISH_NAME)
         },
-        tags = {"Trusted Reference"},
+        tags = {"Trusted Reference", "GDHCN"},
         summary = "Get a single trusted references",
         responses = {
             @ApiResponse(
@@ -190,7 +190,7 @@ public class TrustedReferenceController {
             @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEMA_HASH),
             @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEMA_DISTINGUISH_NAME)
         },
-        tags = {"Trusted Reference"},
+        tags = {"Trusted Reference", "GDHCN"},
         summary = "Delete a Trusted Reference",
         requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
             required = true,

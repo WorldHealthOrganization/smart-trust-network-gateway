@@ -213,7 +213,7 @@ public class TrustedReferenceService {
         trustedReferenceEntity.setReferenceVersion(parsedTrustedEntity.getReferenceVersion());
         trustedReferenceEntity.setContentType(parsedTrustedEntity.getContentType());
         trustedReferenceEntity.setDomain(
-            parsedTrustedEntity.getDomain() == null ? "DCC" : parsedTrustedEntity.getDomain());
+            parsedTrustedEntity.getDomain() == null ? "DDCC" : parsedTrustedEntity.getDomain());
         if (parsedTrustedEntity.getUuid() == null) {
             trustedReferenceEntity.setUuid(UUID.randomUUID().toString());
         }
