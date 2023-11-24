@@ -80,7 +80,7 @@ public class TrustedCertificateController {
             @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEMA_DISTINGUISH_NAME)
         },
         summary = "Uploads Trusted Certificate",
-        tags = {"Trusted Certificate"},
+        tags = {"Trusted Certificate", "GDHCN"},
         requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
             required = true,
             description = "Request body with payload.",
@@ -146,8 +146,9 @@ public class TrustedCertificateController {
         DgcMdc.put("payloadCertSubject", parser.getPayload().getSubject().toString());
 
         try {
+            String domain = body.getDomain() == null ? "DDCC" : body.getDomain();
             signerInformationService.addTrustedCertificate(parser.getPayload(), parser.getSigningCertificate(),
-                body.getCms(), countryCode, body.getKid(), body.getGroup(), body.getDomain(),
+                body.getCms(), countryCode, body.getKid(), body.getGroup(), domain,
                 body.getProperties());
         } catch (SignerInformationService.SignerCertCheckException e) {
             DgcMdc.put(MDC_VERIFICATION_ERROR_REASON, e.getReason().toString());
