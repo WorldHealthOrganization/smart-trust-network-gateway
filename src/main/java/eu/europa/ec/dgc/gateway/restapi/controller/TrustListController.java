@@ -271,7 +271,7 @@ public class TrustListController {
         },
         summary = "Returns a filtered list of trusted certificates. The provided search criteria are additive."
             + " It is possible to provide more than one value for each criteria. (Except for withFederation)",
-        tags = {"Trust Lists"},
+        tags = {"Trust Lists", "GDHCN"},
         parameters = {
             @Parameter(
                 in = ParameterIn.QUERY,
@@ -350,7 +350,7 @@ public class TrustListController {
             @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEMA_DISTINGUISH_NAME)
         },
         summary = "Returns the list of trusted issuers filtered by criterias.",
-        tags = {"Trust List"},
+        tags = {"Trust List", "GDHCN"},
         parameters = {
             @Parameter(
                 in = ParameterIn.QUERY,
@@ -411,7 +411,7 @@ public class TrustListController {
             @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEMA_DISTINGUISH_NAME)
         },
         summary = "Returns the list of trusted issuers filtered by criterias.",
-        tags = {"Trust List"},
+        tags = {"Trust List", "GDHCN"},
         parameters = {
             @Parameter(
                 in = ParameterIn.QUERY,
