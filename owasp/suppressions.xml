@@ -28,6 +28,11 @@
         <cve>CVE-2022-41862</cve>
     </suppress>
     <suppress>
+        <notes>Snakeyaml, DoS on user supplied input; no external/unknown/dynamic input to parser at runtime</notes>
+        <cve>CVE-2022-41854</cve>
+        <cve>CVE-2022-1471</cve>
+    </suppress>
+    <suppress>
         <notes>No more recent version available. CVE is not affecting us because we are not using CloudFundry, SPEL and Sessions</notes>
         <cve>CVE-2023-20873</cve>
         <cve>CVE-2023-20863</cve>
@@ -37,6 +42,7 @@
         <notes>False positive</notes>
         <cve>CVE-2020-8908</cve>
         <cve>CVE-2023-1370</cve>
+        <cve>CVE-2023-24998</cve>
     </suppress>
     <suppress>
         <notes>No Fix available</notes>
