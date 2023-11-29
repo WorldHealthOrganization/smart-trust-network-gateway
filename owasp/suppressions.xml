@@ -48,5 +48,6 @@
         <notes>No Fix available</notes>
         <cve>CVE-2023-36414</cve>
         <cve>CVE-2023-36415</cve>
+        <cve>CVE-2023-36052</cve>
     </suppress>
 </suppressions>
