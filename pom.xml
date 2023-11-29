@@ -52,7 +52,7 @@
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <bcpkix.version>1.76</bcpkix.version>
         <semver4j.version>4.3.0</semver4j.version>
-        <json-schema.version>1.14.2</json-schema.version>
+        <json-schema.version>1.14.3</json-schema.version>
         <shedlock.version>5.2.0</shedlock.version>
         <h2.version>2.2.220</h2.version>
         <!-- plugins -->
