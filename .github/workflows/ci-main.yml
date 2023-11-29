@@ -9,14 +9,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-java@v2
+      - uses: actions/setup-java@v4
         with:
           java-version: 17
           distribution: adopt
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: |
             ~/.m2/repository
@@ -47,31 +47,31 @@ jobs:
           APP_PACKAGES_USERNAME: ${{ github.actor }}
           APP_PACKAGES_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload ZIP for TST
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: DDCCG001_TST
           path: target/DDCCG001_TST*
       - name: Upload ZIP for ACC
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: DDCCG001_ACC
           path: target/DDCCG001_ACC*
       - name: Upload ZIP for PRD
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: DDCCG001_PRD
           path: target/DDCCG001_PRD*
   build-docker:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-java@v2
+      - uses: actions/setup-java@v4
         with:
           java-version: 17
           distribution: adopt
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: |
             ~/.m2/repository
@@ -115,7 +115,7 @@ jobs:
           APP_PACKAGES_URL: ghcr.io/worldhealthorganization/ddcc-gateway/ddcc-gateway
           APP_PACKAGES_USERNAME: ${{ github.actor }}
           APP_PACKAGES_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/delete-package-versions@v2
+      - uses: actions/delete-package-versions@v4
         with:
           package-name: ${APP_PACKAGES_URL}
           min-versions-to-keep: 3
@@ -126,14 +126,14 @@ jobs:
   license:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-java@v2
+      - uses: actions/setup-java@v4
         with:
           java-version: 17
           distribution: adopt
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GPR_TOKEN_F11H }}
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: |
             ~/.m2/repository
