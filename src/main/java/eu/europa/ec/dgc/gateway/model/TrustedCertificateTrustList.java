@@ -20,6 +20,7 @@
 
 package eu.europa.ec.dgc.gateway.model;
 
+import java.security.cert.X509Certificate;
 import java.time.ZonedDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -51,5 +52,7 @@ public class TrustedCertificateTrustList {
     private String domain;
 
     private Integer version;
+
+    private X509Certificate parsedCertificate;
 
 }

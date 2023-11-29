@@ -51,10 +51,9 @@ public class TrustedIssuerTestHelper {
     }
 
     private String getHashData(TrustedIssuerEntity entity) {
-        return entity.getUuid() + ";"
-            + entity.getCountry() + ";"
+        return entity.getCountry() + ";"
             + entity.getName() + ";"
             + entity.getUrl() + ";"
-            + entity.getUrlType().name() + ";";
+            + entity.getUrlType().name();
     }
 }

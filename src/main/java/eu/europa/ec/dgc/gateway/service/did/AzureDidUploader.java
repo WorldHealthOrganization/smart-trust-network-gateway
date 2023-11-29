@@ -32,6 +32,7 @@ import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.blob.models.BlobHttpHeaders;
 import eu.europa.ec.dgc.gateway.config.DgcConfigProperties;
 import java.net.InetSocketAddress;
+import java.text.MessageFormat;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
@@ -42,7 +43,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class AzureDidUploader implements DidUploader {
 
-    private final BlobClient blobClient;
+    private final BlobServiceClient blobServiceClient;
 
     private final DgcConfigProperties dgcConfigProperties;
 
@@ -64,7 +65,7 @@ public class AzureDidUploader implements DidUploader {
 
         HttpClient httpClient = HttpClient.createDefault(httpClientOptions);
 
-        BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
+        blobServiceClient = new BlobServiceClientBuilder()
             .httpClient(httpClient)
             .endpoint(dgcConfigProperties.getDid().getAzure().getBlobEndpoint())
             .credential(new ClientSecretCredentialBuilder()
@@ -75,10 +76,24 @@ public class AzureDidUploader implements DidUploader {
                 .build())
             .buildClient();
 
-        BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(
-            dgcConfigProperties.getDid().getAzure().getBlobContainer());
+    }
 
-        blobClient = blobContainerClient.getBlobClient(dgcConfigProperties.getDid().getAzure().getBlobName());
+    /**
+     * Setup container specific BlobClient.
+     * @param subContainer the name of the container (will be used in lowercase)
+     */
+    public BlobClient getBlobContainerClientForBlobContainer(String subContainer) {
+        BlobContainerClient blobContainerClient;
+        if (subContainer == null) {
+            blobContainerClient = blobServiceClient.getBlobContainerClient(
+                dgcConfigProperties.getDid().getAzure().getBlobContainer());
+        } else {
+            blobContainerClient = blobServiceClient.getBlobContainerClient(
+                    MessageFormat.format("{0}/{1}",
+                            dgcConfigProperties.getDid().getAzure().getBlobContainer(),
+                            subContainer.toLowerCase()));
+        }
+        return blobContainerClient.getBlobClient(dgcConfigProperties.getDid().getAzure().getBlobName());
     }
 
     @Override
@@ -88,6 +103,20 @@ public class AzureDidUploader implements DidUploader {
             dgcConfigProperties.getDid().getAzure().getBlobContainer(),
             dgcConfigProperties.getDid().getAzure().getBlobName());
 
+        BlobClient blobClient = getBlobContainerClientForBlobContainer(null);
+        blobClient.upload(BinaryData.fromBytes(content), true);
+        blobClient.setHttpHeaders(new BlobHttpHeaders().setContentType(MediaType.APPLICATION_JSON_VALUE));
+        log.info("Upload successful");
+    }
+
+    @Override
+    public void uploadDid(String subContainer, byte[] content) {
+        log.info("Uploading {} bytes as {}{}/{} to Azure BLOB Storage", content.length,
+                dgcConfigProperties.getDid().getAzure().getBlobEndpoint(),
+                dgcConfigProperties.getDid().getAzure().getBlobContainer(),
+                dgcConfigProperties.getDid().getAzure().getBlobName());
+
+        BlobClient blobClient = getBlobContainerClientForBlobContainer(subContainer);
         blobClient.upload(BinaryData.fromBytes(content), true);
         blobClient.setHttpHeaders(new BlobHttpHeaders().setContentType(MediaType.APPLICATION_JSON_VALUE));
         log.info("Upload successful");

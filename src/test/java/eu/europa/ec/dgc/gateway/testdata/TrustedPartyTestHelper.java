@@ -45,19 +45,22 @@ public class TrustedPartyTestHelper {
     private final Map<TrustedPartyEntity.CertificateType, Map<String, String>> hashMap = Map.of(
         TrustedPartyEntity.CertificateType.AUTHENTICATION, new HashMap<>(),
         TrustedPartyEntity.CertificateType.CSCA, new HashMap<>(),
-        TrustedPartyEntity.CertificateType.UPLOAD, new HashMap<>()
+        TrustedPartyEntity.CertificateType.UPLOAD, new HashMap<>(),
+        TrustedPartyEntity.CertificateType.TRUSTANCHOR, new HashMap<>()
     );
 
     private final Map<TrustedPartyEntity.CertificateType, Map<String, X509Certificate>> certificateMap = Map.of(
         TrustedPartyEntity.CertificateType.AUTHENTICATION, new HashMap<>(),
         TrustedPartyEntity.CertificateType.CSCA, new HashMap<>(),
-        TrustedPartyEntity.CertificateType.UPLOAD, new HashMap<>()
+        TrustedPartyEntity.CertificateType.UPLOAD, new HashMap<>(),
+        TrustedPartyEntity.CertificateType.TRUSTANCHOR, new HashMap<>()
     );
 
     private final Map<TrustedPartyEntity.CertificateType, Map<String, PrivateKey>> privateKeyMap = Map.of(
         TrustedPartyEntity.CertificateType.AUTHENTICATION, new HashMap<>(),
         TrustedPartyEntity.CertificateType.CSCA, new HashMap<>(),
-        TrustedPartyEntity.CertificateType.UPLOAD, new HashMap<>()
+        TrustedPartyEntity.CertificateType.UPLOAD, new HashMap<>(),
+        TrustedPartyEntity.CertificateType.TRUSTANCHOR, new HashMap<>()
     );
 
     private final TrustedPartyRepository trustedPartyRepository;
@@ -72,17 +75,29 @@ public class TrustedPartyTestHelper {
     }
 
     public String getHash(TrustedPartyEntity.CertificateType type, String countryCode) throws Exception {
-        prepareTestCert(type, countryCode);
+        prepareTestCert(type, countryCode, CertificateTestUtils.SignerType.EC);
         return hashMap.get(type).get(countryCode);
     }
 
     public X509Certificate getCert(TrustedPartyEntity.CertificateType type, String countryCode) throws Exception {
-        prepareTestCert(type, countryCode);
+        prepareTestCert(type, countryCode, CertificateTestUtils.SignerType.EC);
+        return certificateMap.get(type).get(countryCode);
+    }
+
+    public X509Certificate getCert(TrustedPartyEntity.CertificateType type, String countryCode,
+                                   CertificateTestUtils.SignerType signerType) throws Exception {
+        prepareTestCert(type, countryCode, signerType);
         return certificateMap.get(type).get(countryCode);
     }
 
     public PrivateKey getPrivateKey(TrustedPartyEntity.CertificateType type, String countryCode) throws Exception {
-        prepareTestCert(type, countryCode);
+        prepareTestCert(type, countryCode, CertificateTestUtils.SignerType.EC);
+        return privateKeyMap.get(type).get(countryCode);
+    }
+
+    public PrivateKey getPrivateKey(TrustedPartyEntity.CertificateType type, String countryCode,
+                                    CertificateTestUtils.SignerType signerType) throws Exception {
+        prepareTestCert(type, countryCode, signerType);
         return privateKeyMap.get(type).get(countryCode);
     }
 
@@ -103,10 +118,11 @@ public class TrustedPartyTestHelper {
         privateKeyMap.get(type).remove(countryCode);
     }
 
-    private void prepareTestCert(TrustedPartyEntity.CertificateType type, String countryCode) throws Exception {
+    private void prepareTestCert(TrustedPartyEntity.CertificateType type, String countryCode,
+                                 CertificateTestUtils.SignerType signerType) throws Exception {
         // Check if a test certificate already exists
         if (!hashMap.get(type).containsKey(countryCode)) {
-            createAndInsertCert(type, countryCode);
+            createAndInsertCert(type, countryCode, signerType);
         }
 
         // Check if generated certificate is (still) present in DB
@@ -117,11 +133,12 @@ public class TrustedPartyTestHelper {
         }
     }
 
-    private void createAndInsertCert(TrustedPartyEntity.CertificateType type, String countryCode) throws Exception {
-        KeyPair keyPair = KeyPairGenerator.getInstance("ec").generateKeyPair();
+    private void createAndInsertCert(TrustedPartyEntity.CertificateType type, String countryCode,
+                                     CertificateTestUtils.SignerType signerType) throws Exception {
+        KeyPair keyPair = KeyPairGenerator.getInstance(signerType.getSigningAlgorithm()).generateKeyPair();
         X509Certificate authCertificate =
             CertificateTestUtils.generateCertificate(keyPair, countryCode,
-                "DGC Test " + type.name() + " Cert");
+                "DGC Test " + type.name() + " Cert", signerType);
 
         certificateMap.get(type).put(countryCode, authCertificate);
         hashMap.get(type).put(countryCode, certificateUtils.getCertThumbprint(authCertificate));

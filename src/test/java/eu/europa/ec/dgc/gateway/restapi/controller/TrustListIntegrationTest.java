@@ -98,7 +98,7 @@ class TrustListIntegrationTest {
     private static final String countryCode = "EU";
     private static final String authCertSubject = "C=" + countryCode;
 
-    X509Certificate certUploadDe, certUploadEu, certCscaDe, certCscaEu, certAuthDe, certAuthEu, certDscDe, certDscEu;
+    X509Certificate certUploadDe, certUploadEu, certCscaDe, certCscaEu, certAuthDe, certAuthEu, certDscDe, certDscEu, certCustomEu, certTrustAnchorEu;
 
     @AfterEach
     public void cleanUp() {
@@ -118,9 +118,14 @@ class TrustListIntegrationTest {
         certAuthDe = trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.AUTHENTICATION, "DE");
         certAuthEu = trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.AUTHENTICATION, "EU");
 
+        // Add New TrustedPartyType to check that it will not be returned.
+        certTrustAnchorEu = trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.TRUSTANCHOR, "EU");
+
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("ec");
         certDscDe = CertificateTestUtils.generateCertificate(keyPairGenerator.generateKeyPair(), "DE", "Test");
         certDscEu = CertificateTestUtils.generateCertificate(keyPairGenerator.generateKeyPair(), "EU", "Test");
+        certCustomEu = CertificateTestUtils.generateCertificate(keyPairGenerator.generateKeyPair(), "EU", "Test");
+
 
         signerInformationRepository.save(new SignerInformationEntity(
             null,
@@ -143,6 +148,18 @@ class TrustListIntegrationTest {
             "sig2",
             null,
             SignerInformationEntity.CertificateType.DSC,
+            null
+        ));
+
+        signerInformationRepository.save(new SignerInformationEntity(
+            null,
+            ZonedDateTime.now(),
+            "DE",
+            certificateUtils.getCertThumbprint(certCustomEu),
+            Base64.getEncoder().encodeToString(certCustomEu.getEncoded()),
+            "sig3",
+            null,
+            SignerInformationEntity.CertificateType.CUSTOM,
             null
         ));
 
@@ -173,6 +190,8 @@ class TrustListIntegrationTest {
             .andExpect(c -> assertTrustListItem(c, certUploadEu, "EU", CertificateTypeDto.UPLOAD, null))
             .andExpect(c -> assertTrustListItem(c, certAuthDe, "DE", CertificateTypeDto.AUTHENTICATION, null))
             .andExpect(c -> assertTrustListItem(c, certAuthEu, "EU", CertificateTypeDto.AUTHENTICATION, null))
+            .andExpect(c -> assertTrustListDoesNotContainItem(c, certCustomEu))
+            .andExpect(c -> assertTrustListDoesNotContainItem(c, certTrustAnchorEu))
             .andExpect(c -> assertTrustListLength(c, 8));
     }
 
@@ -554,6 +573,22 @@ class TrustListIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", hasSize(0)));
+    }
+
+    private void assertTrustListDoesNotContainItem(MvcResult result, X509Certificate certificate)
+        throws UnsupportedEncodingException, JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule());
+        List<TrustListDto> trustList =
+            objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+
+        Optional<TrustListDto> trustListOptional = trustList
+            .stream()
+            .filter(tl -> tl.getKid().equals(certificateUtils.getCertKid(certificate)))
+            .findFirst();
+
+        Assertions.assertFalse(trustListOptional.isPresent());
     }
 
     private void assertTrustListItem(MvcResult result, X509Certificate certificate, String country,

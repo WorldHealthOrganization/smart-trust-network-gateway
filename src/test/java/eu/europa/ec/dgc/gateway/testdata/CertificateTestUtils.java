@@ -31,6 +31,10 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
+
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x509.BasicConstraints;
@@ -73,7 +77,15 @@ public class CertificateTestUtils {
         Date validFrom = Date.from(Instant.now().minus(1, ChronoUnit.DAYS));
         Date validTo = Date.from(Instant.now().plus(365, ChronoUnit.DAYS));
 
-        return generateCertificate(keyPair, country, commonName, validFrom, validTo);
+        return generateCertificate(keyPair, country, commonName, validFrom, validTo, SignerType.EC);
+    }
+
+    public static X509Certificate generateCertificate(KeyPair keyPair, String country, String commonName,
+                                                      SignerType signerType) throws Exception {
+        Date validFrom = Date.from(Instant.now().minus(1, ChronoUnit.DAYS));
+        Date validTo = Date.from(Instant.now().plus(365, ChronoUnit.DAYS));
+
+        return generateCertificate(keyPair, country, commonName, validFrom, validTo, signerType);
     }
 
     public static X509Certificate generateCertificate(KeyPair keyPair, String country, String commonName,
@@ -81,11 +93,21 @@ public class CertificateTestUtils {
         Date validFrom = Date.from(Instant.now().minus(1, ChronoUnit.DAYS));
         Date validTo = Date.from(Instant.now().plus(365, ChronoUnit.DAYS));
 
-        return generateCertificate(keyPair, country, commonName, validFrom, validTo, ca, caKey);
+        return generateCertificate(keyPair, country, commonName, validFrom, validTo, ca, caKey, SignerType.EC);
     }
 
     public static X509Certificate generateCertificate(KeyPair keyPair, String country, String commonName,
-                                                      Date validFrom, Date validTo) throws Exception {
+                                                      X509Certificate ca, PrivateKey caKey,
+                                                      SignerType signerType) throws Exception {
+        Date validFrom = Date.from(Instant.now().minus(1, ChronoUnit.DAYS));
+        Date validTo = Date.from(Instant.now().plus(365, ChronoUnit.DAYS));
+
+        return generateCertificate(keyPair, country, commonName, validFrom, validTo, ca, caKey, signerType);
+    }
+
+    public static X509Certificate generateCertificate(KeyPair keyPair, String country, String commonName,
+                                                      Date validFrom, Date validTo,
+                                                      SignerType signerType) throws Exception {
         X500Name subject = new X500NameBuilder()
             .addRDN(X509ObjectIdentifiers.countryName, country)
             .addRDN(X509ObjectIdentifiers.commonName, commonName)
@@ -93,7 +115,7 @@ public class CertificateTestUtils {
 
         BigInteger certSerial = new BigInteger(Long.toString(System.currentTimeMillis()));
 
-        ContentSigner contentSigner = new JcaContentSignerBuilder("SHA256withECDSA").build(keyPair.getPrivate());
+        ContentSigner contentSigner = new JcaContentSignerBuilder(signerType.signingMethod).build(keyPair.getPrivate());
 
         JcaX509v3CertificateBuilder certBuilder =
             new JcaX509v3CertificateBuilder(subject, certSerial, validFrom, validTo, subject, keyPair.getPublic());
@@ -106,7 +128,7 @@ public class CertificateTestUtils {
 
     public static X509Certificate generateCertificate(KeyPair keyPair, String country, String commonName,
                                                       Date validFrom, Date validTo, X509Certificate ca,
-                                                      PrivateKey caKey) throws Exception {
+                                                      PrivateKey caKey, SignerType signerType) throws Exception {
         X500Name subject = new X500NameBuilder()
             .addRDN(X509ObjectIdentifiers.countryName, country)
             .addRDN(X509ObjectIdentifiers.commonName, commonName)
@@ -116,7 +138,7 @@ public class CertificateTestUtils {
 
         BigInteger certSerial = new BigInteger(Long.toString(System.currentTimeMillis()));
 
-        ContentSigner contentSigner = new JcaContentSignerBuilder("SHA256withECDSA").build(caKey);
+        ContentSigner contentSigner = new JcaContentSignerBuilder(signerType.signingMethod).build(caKey);
 
         JcaX509v3CertificateBuilder certBuilder =
             new JcaX509v3CertificateBuilder(issuer, certSerial, validFrom, validTo, subject, keyPair.getPublic());
@@ -144,4 +166,14 @@ public class CertificateTestUtils {
         Assertions.assertEquals(v1.getLogic(), v2.getLogic());
     }
 
+    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+    @Getter
+    public static class SignerType {
+
+        private final String signingMethod;
+        private final String signingAlgorithm;
+
+        public static SignerType RSA = new SignerType("SHA256withRSA", "RSA");
+        public static SignerType EC = new SignerType("SHA256withECDSA", "EC");
+    }
 }

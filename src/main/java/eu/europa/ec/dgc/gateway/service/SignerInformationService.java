@@ -70,24 +70,15 @@ public class SignerInformationService {
     private static final String MDC_PROP_UPLOAD_CERT_THUMBPRINT = "uploadCertThumbprint";
     private static final String MDC_PROP_CSCA_CERT_THUMBPRINT = "cscaCertThumbprint";
 
-    /**
-     * Method to query persistence layer for all stored non federated SignerInformation.
-     *
-     * @return List of SignerInformation
-     */
-    public List<SignerInformationEntity> getNonFederatedSignerInformation() {
-        return signerInformationRepository.getAllBySourceGatewayIsNullAndDomainIs("DCC");
-    }
 
     /**
-     * Method to query persistence layer for SignerInformation filtered by Type.
+     * Method to query persistence layer for SignerInformation filtered by Type = DSC.
      *
-     * @param type type to filter for
      * @return List of SignerInformation
      */
-    public List<SignerInformationEntity> getNonFederatedSignerInformation(
-        SignerInformationEntity.CertificateType type) {
-        return signerInformationRepository.getByCertificateTypeAndSourceGatewayIsNullAndDomainIs(type, "DCC");
+    public List<SignerInformationEntity> getNonFederatedEuDscSignerInformation() {
+        return signerInformationRepository.getByCertificateTypeAndSourceGatewayIsNullAndDomainIs(
+            SignerInformationEntity.CertificateType.DSC, "DCC");
     }
 
     /**

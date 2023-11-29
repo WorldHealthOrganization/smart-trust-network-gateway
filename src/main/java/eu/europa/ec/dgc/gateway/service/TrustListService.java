@@ -53,8 +53,8 @@ public class TrustListService {
      */
     public List<TrustList> getTrustList() {
         return mergeAndConvert(
-            trustedPartyService.getNonFederatedTrustedParties(),
-            signerInformationService.getNonFederatedSignerInformation()
+            trustedPartyService.getNonFederatedEuDscTrustedParties(),
+            signerInformationService.getNonFederatedEuDscSignerInformation()
         );
     }
 
@@ -68,11 +68,11 @@ public class TrustListService {
         if (type == TrustListType.DSC) {
             return mergeAndConvert(
                 Collections.emptyList(),
-                signerInformationService.getNonFederatedSignerInformation(SignerInformationEntity.CertificateType.DSC)
+                signerInformationService.getNonFederatedEuDscSignerInformation()
             );
         } else {
             return mergeAndConvert(
-                trustedPartyService.getNonFederatedTrustedParties(map(type)),
+                trustedPartyService.getNonFederatedEuDscTrustedParties(map(type)),
                 Collections.emptyList()
             );
         }
@@ -156,7 +156,8 @@ public class TrustListService {
                 ? trustedPartyEntity.getSourceGateway().getGatewayId() : null,
             trustedPartyEntity.getUuid(),
             trustedPartyEntity.getDomain(),
-            trustedPartyEntity.getVersion()
+            trustedPartyEntity.getVersion(),
+            trustedPartyService.getX509CertificateFromEntity(trustedPartyEntity)
         );
     }
 
@@ -174,7 +175,8 @@ public class TrustListService {
                 ? signerInformationEntity.getSourceGateway().getGatewayId() : null,
             signerInformationEntity.getUuid(),
             signerInformationEntity.getDomain(),
-            signerInformationEntity.getVersion()
+            signerInformationEntity.getVersion(),
+            signerInformationService.getX509CertificateFromEntity(signerInformationEntity)
         );
     }
 

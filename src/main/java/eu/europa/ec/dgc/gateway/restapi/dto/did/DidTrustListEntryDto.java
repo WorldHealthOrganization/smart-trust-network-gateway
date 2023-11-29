@@ -21,9 +21,16 @@
 package eu.europa.ec.dgc.gateway.restapi.dto.did;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.RSAPublicKey;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import lombok.Data;
-import lombok.experimental.SuperBuilder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.bouncycastle.jce.spec.ECNamedCurveSpec;
 
 @Data
 public class DidTrustListEntryDto {
@@ -36,18 +43,24 @@ public class DidTrustListEntryDto {
 
     private PublicKeyJwk publicKeyJwk;
 
-    @Data
-    @SuperBuilder
-    private abstract static class PublicKeyJwk {
+    @NoArgsConstructor
+    @Setter
+    @Getter
+    public abstract static class PublicKeyJwk {
         @JsonProperty("kty")
         private String keyType;
 
         @JsonProperty("x5c")
         private List<String> encodedX509Certificates;
+
+        private PublicKeyJwk(String keyType, List<String> encodedX509Certificates) {
+            this.keyType = keyType;
+            this.encodedX509Certificates = new ArrayList<>(encodedX509Certificates);
+        }
     }
 
-    @Data
-    @SuperBuilder
+    @Getter
+    @Setter
     public static class EcPublicKeyJwk extends PublicKeyJwk {
 
         @JsonProperty("crv")
@@ -58,6 +71,51 @@ public class DidTrustListEntryDto {
 
         @JsonProperty("y")
         private String valueY;
+
+        /**
+         * Instantiate EC PublicKey JWK Class.
+         *
+         * @param ecPublicKey EC Public Key that should be wrapped.
+         * @param base64EncodedCertificates List of Base64 encoded Certificates assigned to provided Public Key.
+         *                                   They will be added within x5c property of JWK.
+         */
+        public EcPublicKeyJwk(ECPublicKey ecPublicKey, List<String> base64EncodedCertificates) {
+            super("EC", base64EncodedCertificates);
+            valueX = Base64.getEncoder().encodeToString(ecPublicKey.getW().getAffineX().toByteArray());
+            valueY = Base64.getEncoder().encodeToString(ecPublicKey.getW().getAffineY().toByteArray());
+
+            ECNamedCurveSpec curveSpec = (ECNamedCurveSpec) ecPublicKey.getParams();
+            switch (curveSpec.getName()) {
+                case "prime256v1" -> curve = "P-256";
+                case "prime384v1" -> curve = "P-384";
+                case "prime521v1" -> curve = "P-521";
+                default -> curve = "UNKNOWN CURVE";
+            }
+        }
+    }
+
+    @Getter
+    @Setter
+    public static class RsaPublicKeyJwk extends PublicKeyJwk {
+
+        @JsonProperty("e")
+        private String valueE;
+
+        @JsonProperty("n")
+        private String valueN;
+
+        /**
+         * Instantiate RSA PublicKey JWK Class.
+         *
+         * @param rsaPublicKey RSA Public Key that should be wrapped.
+         * @param base64EncodedCertificates List of Base64 encoded Certificates assigned to provided Public Key.
+         *                                   They will be added within x5c property of JWK.
+         */
+        public RsaPublicKeyJwk(RSAPublicKey rsaPublicKey, List<String> base64EncodedCertificates) {
+            super("RSA", base64EncodedCertificates);
+            valueN = Base64.getEncoder().encodeToString(rsaPublicKey.getModulus().toByteArray());
+            valueE = Base64.getEncoder().encodeToString(rsaPublicKey.getPublicExponent().toByteArray());
+        }
     }
 
 }
