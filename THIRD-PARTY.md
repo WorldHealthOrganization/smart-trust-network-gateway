@@ -14,14 +14,14 @@ ThirdParty Licenses
 | ch.qos.logback:logback-classic:1.4.8 | Eclipse Public License - v 1.0 GNU Lesser General Public License |
 | ch.qos.logback:logback-core:1.4.8 | Eclipse Public License - v 1.0 GNU Lesser General Public License |
 | com.apicatalog:titanium-json-ld:1.1.0 | Apache License, Version 2.0 |
-| com.azure:azure-core:1.43.0 | The MIT License (MIT) |
-| com.azure:azure-core-http-netty:1.13.7 | The MIT License (MIT) |
-| com.azure:azure-identity:1.10.1 | The MIT License (MIT) |
+| com.azure:azure-core:1.45.0 | The MIT License (MIT) |
+| com.azure:azure-core-http-netty:1.13.10 | The MIT License (MIT) |
+| com.azure:azure-identity:1.11.0 | The MIT License (MIT) |
 | com.azure:azure-json:1.1.0 | The MIT License (MIT) |
-| com.azure:azure-security-keyvault-keys:4.7.0 | The MIT License (MIT) |
-| com.azure:azure-storage-blob:12.24.0 | The MIT License (MIT) |
-| com.azure:azure-storage-common:12.23.0 | The MIT License (MIT) |
-| com.azure:azure-storage-internal-avro:12.9.0 | The MIT License (MIT) |
+| com.azure:azure-security-keyvault-keys:4.7.1 | The MIT License (MIT) |
+| com.azure:azure-storage-blob:12.24.1 | The MIT License (MIT) |
+| com.azure:azure-storage-common:12.23.1 | The MIT License (MIT) |
+| com.azure:azure-storage-internal-avro:12.9.1 | The MIT License (MIT) |
 | com.damnhandy:handy-uri-templates:2.1.8 | The Apache Software License, Version 2.0 |
 | com.danubetech:key-formats-java:1.2.0 | Unknown license |
 | com.fasterxml:classmate:1.5.1 | Apache License, Version 2.0 |
@@ -34,7 +34,7 @@ ThirdParty Licenses
 | com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.14.3 | The Apache Software License, Version 2.0 |
 | com.fasterxml.jackson.module:jackson-module-parameter-names:2.14.3 | The Apache Software License, Version 2.0 |
 | com.fasterxml.woodstox:woodstox-core:6.5.0 | The Apache License, Version 2.0 |
-| com.github.everit-org.json-schema:org.everit.json.schema:1.14.2 | Apache License, Version 2.0 |
+| com.github.everit-org.json-schema:org.everit.json.schema:1.14.3 | Apache License, Version 2.0 |
 | com.github.jnr:jffi:1.2.9 | The Apache Software License, Version 2.0 |
 | com.github.jnr:jnr-ffi:2.0.5 | The Apache Software License, Version 2.0 |
 | com.github.jnr:jnr-x86asm:1.0.2 | MIT License |
@@ -51,9 +51,8 @@ ThirdParty Licenses
 | com.google.re2j:re2j:1.6 | Go License |
 | com.h2database:h2:2.2.220 | EPL 1.0 MPL 2.0 |
 | com.jayway.jsonpath:json-path:2.7.0 | The Apache Software License, Version 2.0 |
-| com.microsoft.azure:msal4j:1.13.9 | MIT License |
+| com.microsoft.azure:msal4j:1.14.0 | MIT License |
 | com.microsoft.azure:msal4j-persistence-extension:1.2.0 | MIT License |
-| com.mysql:mysql-connector-j:8.0.33 | The GNU General Public License, v2 with Universal FOSS Exception, v1.0 |
 | com.nimbusds:content-type:2.2 | The Apache Software License, Version 2.0 |
 | com.nimbusds:lang-tag:1.7 | The Apache Software License, Version 2.0 |
 | com.nimbusds:nimbus-jose-jwt:9.9 | The Apache Software License, Version 2.0 |
@@ -176,7 +175,7 @@ ThirdParty Licenses
 | org.jetbrains.kotlin:kotlin-stdlib-common:1.7.22 | The Apache License, Version 2.0 |
 | org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.7.22 | The Apache License, Version 2.0 |
 | org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.7.22 | The Apache License, Version 2.0 |
-| org.json:json:20230227 | Public Domain |
+| org.json:json:20231013 | Public Domain |
 | org.junit.jupiter:junit-jupiter:5.9.3 | Eclipse Public License v2.0 |
 | org.junit.jupiter:junit-jupiter-api:5.9.3 | Eclipse Public License v2.0 |
 | org.junit.jupiter:junit-jupiter-engine:5.9.3 | Eclipse Public License v2.0 |
