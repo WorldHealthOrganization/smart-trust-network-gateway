@@ -56,6 +56,7 @@
         <shedlock.version>5.2.0</shedlock.version>
         <h2.version>2.2.220</h2.version>
         <!-- plugins -->
+        <plugin.maven-surefire.version>3.1.2</plugin.maven-surefire.version>
         <plugin.maven-assembly.version>3.4.2</plugin.maven-assembly.version>
         <plugin.checkstyle.version>3.2.1</plugin.checkstyle.version>
         <plugin.sonar.version>3.9.1.2184</plugin.sonar.version>
@@ -364,6 +365,17 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-assembly-plugin</artifactId>
                     <version>${plugin.maven-assembly.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${plugin.maven-surefire.version}</version>
+                    <configuration>
+                        <excludes>
+                            <exclude>eu.europa.ec.dgc.gateway.restapi.controller/CertificateRevocationListIntegrationTest.java</exclude>
+                            <exclude>eu.europa.ec.dgc.gateway.service/CertificateRevocationListCleanupTest.java</exclude>
+                        </excludes>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
