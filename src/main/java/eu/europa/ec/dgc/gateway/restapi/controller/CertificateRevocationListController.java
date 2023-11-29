@@ -48,6 +48,7 @@ import jakarta.validation.constraints.Pattern;
 import java.time.ZonedDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -69,6 +70,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @Validated
 @Slf4j
+@ConditionalOnProperty(name = "revocation-list.controller.enabled", havingValue = "true")
 public class CertificateRevocationListController {
 
     private final RevocationListService revocationListService;

@@ -107,3 +107,7 @@ dgc:
 springdoc:
   api-docs:
     enabled: false
+
+revocation-list:
+  controller:
+    enabled: false
