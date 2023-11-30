@@ -47,6 +47,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.cert.X509CertificateHolder;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.BeanPropertyBindingResult;
@@ -57,6 +58,7 @@ import org.springframework.validation.Validator;
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "dgc.revocation.enabled", havingValue = "true")
 public class RevocationListService {
 
     private static final int MAX_BATCH_LIST_SIZE = 1000;
