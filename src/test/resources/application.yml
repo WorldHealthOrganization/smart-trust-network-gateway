@@ -39,6 +39,8 @@ dgc:
       thumbprint: X-SSL-Client-SHA256
       distinguished-name: X-SSL-Client-DN
       pem: X-SSL-Client-Cert
+  revocation:
+    enabled: false
   did:
     enableDidGeneration: true
     didId: a
