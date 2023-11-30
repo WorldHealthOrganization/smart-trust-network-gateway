@@ -33,7 +33,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@ConditionalOnProperty(name = "revocation-list.controller.enabled", havingValue = "true")
+@ConditionalOnProperty(name = "dgc.revocation.enabled", havingValue = "true")
 public class RevocationListCleanUpService {
 
     private final RevocationBatchRepository revocationBatchRepository;

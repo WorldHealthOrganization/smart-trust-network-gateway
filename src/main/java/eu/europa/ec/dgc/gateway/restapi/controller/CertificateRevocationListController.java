@@ -70,7 +70,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @Validated
 @Slf4j
-@ConditionalOnProperty(name = "revocation-list.controller.enabled", havingValue = "true")
+@ConditionalOnProperty(name = "dgc.revocation.enabled", havingValue = "true")
 public class CertificateRevocationListController {
 
     private final RevocationListService revocationListService;

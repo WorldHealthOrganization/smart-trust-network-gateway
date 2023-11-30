@@ -58,7 +58,7 @@ import org.springframework.validation.Validator;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "revocation-list.controller.enabled", havingValue = "true")
+@ConditionalOnProperty(name = "dgc.revocation.enabled", havingValue = "true")
 public class RevocationListService {
 
     private static final int MAX_BATCH_LIST_SIZE = 1000;
