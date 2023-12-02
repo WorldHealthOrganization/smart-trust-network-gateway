@@ -67,6 +67,7 @@ dgc:
       pem: X-SSL-Client-Cert
   revocation:
     delete-threshold: 14
+    enabled: false
   signer-information:
     delete-threshold: 14
   trustedCertificates:
@@ -104,6 +105,7 @@ dgc:
     apiKey: 0a0a0a0a-0a0a-0a0a-0a0a-0a0a0a0a0a0a
     url: https://api.cloudmersive.com
     enabled: false
+
 springdoc:
   api-docs:
     enabled: false

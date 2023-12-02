@@ -151,6 +151,7 @@ public class DgcConfigProperties {
     @Setter
     public static class Revocation {
         private int deleteThreshold = 14;
+        private Boolean enabled;
     }
 
     @Getter
