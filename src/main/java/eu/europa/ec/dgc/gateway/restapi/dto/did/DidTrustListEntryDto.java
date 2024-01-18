@@ -53,9 +53,13 @@ public class DidTrustListEntryDto {
         @JsonProperty("x5c")
         private List<String> encodedX509Certificates;
 
-        private PublicKeyJwk(String keyType, List<String> encodedX509Certificates) {
+        @JsonProperty("kid")
+        private String keyId;
+
+        private PublicKeyJwk(String keyType, List<String> encodedX509Certificates, String keyId) {
             this.keyType = keyType;
             this.encodedX509Certificates = new ArrayList<>(encodedX509Certificates);
+            this.keyId = keyId;
         }
     }
 
@@ -79,8 +83,8 @@ public class DidTrustListEntryDto {
          * @param base64EncodedCertificates List of Base64 encoded Certificates assigned to provided Public Key.
          *                                   They will be added within x5c property of JWK.
          */
-        public EcPublicKeyJwk(ECPublicKey ecPublicKey, List<String> base64EncodedCertificates) {
-            super("EC", base64EncodedCertificates);
+        public EcPublicKeyJwk(ECPublicKey ecPublicKey, List<String> base64EncodedCertificates, String keyId) {
+            super("EC", base64EncodedCertificates, keyId);
             valueX = Base64.getUrlEncoder().encodeToString(ecPublicKey.getW().getAffineX().toByteArray());
             valueY = Base64.getUrlEncoder().encodeToString(ecPublicKey.getW().getAffineY().toByteArray());
 
@@ -107,12 +111,12 @@ public class DidTrustListEntryDto {
         /**
          * Instantiate RSA PublicKey JWK Class.
          *
-         * @param rsaPublicKey RSA Public Key that should be wrapped.
+         * @param rsaPublicKey              RSA Public Key that should be wrapped.
          * @param base64EncodedCertificates List of Base64 encoded Certificates assigned to provided Public Key.
-         *                                   They will be added within x5c property of JWK.
+         *                                  They will be added within x5c property of JWK.
          */
-        public RsaPublicKeyJwk(RSAPublicKey rsaPublicKey, List<String> base64EncodedCertificates) {
-            super("RSA", base64EncodedCertificates);
+        public RsaPublicKeyJwk(RSAPublicKey rsaPublicKey, List<String> base64EncodedCertificates, String keyId) {
+            super("RSA", base64EncodedCertificates, keyId);
             valueN = Base64.getUrlEncoder().encodeToString(rsaPublicKey.getModulus().toByteArray());
             valueE = Base64.getUrlEncoder().encodeToString(rsaPublicKey.getPublicExponent().toByteArray());
         }

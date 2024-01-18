@@ -188,14 +188,14 @@ public class DidTrustListService {
         for (TrustedCertificateTrustList cert : certs) {
 
             PublicKey publicKey = cert.getParsedCertificate().getPublicKey();
-
+            String kid = cert.getKid();
             if (publicKey instanceof RSAPublicKey rsaPublicKey) {
                 addTrustListEntry(trustList, cert,
-                    new DidTrustListEntryDto.RsaPublicKeyJwk(rsaPublicKey, List.of(cert.getCertificate())));
+                    new DidTrustListEntryDto.RsaPublicKeyJwk(rsaPublicKey, List.of(cert.getCertificate()),kid));
 
             } else if (publicKey instanceof ECPublicKey ecPublicKey) {
                 addTrustListEntry(trustList, cert,
-                    new DidTrustListEntryDto.EcPublicKeyJwk(ecPublicKey, List.of(cert.getCertificate())));
+                    new DidTrustListEntryDto.EcPublicKeyJwk(ecPublicKey, List.of(cert.getCertificate()), kid));
 
             } else {
                 log.error("Public Key is not RSA or EC Public Key for cert {} of country {}",
@@ -255,7 +255,7 @@ public class DidTrustListService {
             publicKeyJwk.getEncodedX509Certificates()
                 .add(Base64.getEncoder().encodeToString(csca.get().getParsedCertificate().getEncoded()));
         }
-
+        publicKeyJwk.setKeyId(cert.getKid());
         DidTrustListEntryDto trustListEntry = new DidTrustListEntryDto();
         trustListEntry.setType("JsonWebKey2020");
         trustListEntry.setId(configProperties.getDid().getTrustListIdPrefix()
