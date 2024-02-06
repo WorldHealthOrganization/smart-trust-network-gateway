@@ -83,11 +83,14 @@ dgc:
       - pubkey
       - displayURL
     allowedDomains:
-      - ICAO
       - DCC
+      - DDCC
+      - DIVOC
+      - ICAO
       - SHC
       - CRED
       - RACSEL-DDVC
+      - IPS
   trustlist:
     cron: "* */5 * * * *"
   did:
