@@ -267,17 +267,17 @@ public class DidTrustListServiceTest {
 
         if (dsc.getPublicKey().getAlgorithm().equals(CertificateTestUtils.SignerType.EC.getSigningAlgorithm())) {
             Assertions.assertEquals(((ECPublicKey) dsc.getPublicKey()).getW().getAffineX(),
-                    new BigInteger(Base64.getDecoder().decode(publicKeyJwk.get("x").toString())));
+                    new BigInteger(Base64.getUrlDecoder().decode(publicKeyJwk.get("x").toString())));
             Assertions.assertEquals(((ECPublicKey) dsc.getPublicKey()).getW().getAffineY(),
-                    new BigInteger(Base64.getDecoder().decode(publicKeyJwk.get("y").toString())));
+                    new BigInteger(Base64.getUrlDecoder().decode(publicKeyJwk.get("y").toString())));
             Assertions.assertEquals(CertificateTestUtils.SignerType.EC.getSigningAlgorithm(),
                     publicKeyJwk.get("kty").toString());
             Assertions.assertEquals("P-256", publicKeyJwk.get("crv").toString());
         } else {
             Assertions.assertEquals(((RSAPublicKey) dsc.getPublicKey()).getPublicExponent(),
-                    new BigInteger(Base64.getDecoder().decode(publicKeyJwk.get("e").toString())));
+                    new BigInteger(Base64.getUrlDecoder().decode(publicKeyJwk.get("e").toString())));
             Assertions.assertEquals(((RSAPublicKey) dsc.getPublicKey()).getModulus(),
-                    new BigInteger(Base64.getDecoder().decode(publicKeyJwk.get("n").toString())));
+                    new BigInteger(Base64.getUrlDecoder().decode(publicKeyJwk.get("n").toString())));
             Assertions.assertEquals(CertificateTestUtils.SignerType.RSA.getSigningAlgorithm(),
                     publicKeyJwk.get("kty").toString());
         }
