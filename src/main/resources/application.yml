@@ -91,6 +91,7 @@ dgc:
       - CRED
       - RACSEL-DDVC
       - IPS
+      - dICVP
   trustlist:
     cron: "* */5 * * * *"
   did:
