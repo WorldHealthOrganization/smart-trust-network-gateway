@@ -137,7 +137,7 @@ public class CertificateRevocationListController {
     /**
      * Endpoint to download Revocation Batch.
      */
-    @CertificateAuthenticationRequired(requiredRoles = CertificateAuthenticationRole.RevocationListReader)
+    /* @CertificateAuthenticationRequired(requiredRoles = CertificateAuthenticationRole.RevocationListReader)
     @GetMapping(value = "/{batchId}", produces = {
         CmsStringMessageConverter.CONTENT_TYPE_CMS_TEXT_VALUE, CmsStringMessageConverter.CONTENT_TYPE_CMS_VALUE})
     @Operation(
@@ -203,12 +203,12 @@ public class CertificateRevocationListController {
 
             }
         }
-    }
+    }*/
 
     /**
      * Endpoint to upload Revocation Batch.
      */
-    @CertificateAuthenticationRequired(requiredRoles = CertificateAuthenticationRole.RevocationUploader)
+    /*@CertificateAuthenticationRequired(requiredRoles = CertificateAuthenticationRole.RevocationUploader)
     @PostMapping(value = "", consumes = {
         CmsStringMessageConverter.CONTENT_TYPE_CMS_TEXT_VALUE, CmsStringMessageConverter.CONTENT_TYPE_CMS_VALUE})
     @Operation(
@@ -280,12 +280,12 @@ public class CertificateRevocationListController {
             .status(HttpStatus.CREATED)
             .header(HttpHeaders.ETAG, batchId)
             .build();
-    }
+    }*/
 
     /**
      * Endpoint to delete Revocation Batch.
      */
-    @CertificateAuthenticationRequired(requiredRoles = CertificateAuthenticationRole.RevocationDeleter)
+    /*@CertificateAuthenticationRequired(requiredRoles = CertificateAuthenticationRole.RevocationDeleter)
     @DeleteMapping(value = "", consumes = {
         CmsStringMessageConverter.CONTENT_TYPE_CMS_TEXT_VALUE, CmsStringMessageConverter.CONTENT_TYPE_CMS_VALUE})
     @Operation(
@@ -355,12 +355,12 @@ public class CertificateRevocationListController {
         }
 
         return ResponseEntity.noContent().build();
-    }
+    }*/
 
     /**
      * Alternative endpoint to delete revocation batches.
      */
-    @CertificateAuthenticationRequired(requiredRoles = CertificateAuthenticationRole.RevocationDeleter)
+    /*@CertificateAuthenticationRequired(requiredRoles = CertificateAuthenticationRole.RevocationDeleter)
     @PostMapping(value = "/delete", consumes = {
         CmsStringMessageConverter.CONTENT_TYPE_CMS_TEXT_VALUE, CmsStringMessageConverter.CONTENT_TYPE_CMS_VALUE})
     public ResponseEntity<Void> deleteBatchAlternativeEndpoint(
@@ -368,5 +368,5 @@ public class CertificateRevocationListController {
         @RequestAttribute(CertificateAuthenticationFilter.REQUEST_PROP_COUNTRY) String countryCode) {
 
         return deleteBatch(batchDeleteRequest, countryCode);
-    }
+    }*/
 }
