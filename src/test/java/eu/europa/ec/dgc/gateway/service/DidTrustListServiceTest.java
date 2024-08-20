@@ -23,6 +23,7 @@ package eu.europa.ec.dgc.gateway.service;
 import static org.mockito.Mockito.doNothing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.util.Base64URL;
 import eu.europa.ec.dgc.gateway.entity.FederationGatewayEntity;
 import eu.europa.ec.dgc.gateway.entity.SignerInformationEntity;
 import eu.europa.ec.dgc.gateway.entity.TrustedPartyEntity;
@@ -220,12 +221,12 @@ public class DidTrustListServiceTest {
         Assertions.assertEquals("b", parsed.getController());
         Assertions.assertEquals(6, parsed.getVerificationMethod().size());
 
-        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c" + ":deu" + "#" + URLEncoder.encode(certDscDeKid, StandardCharsets.UTF_8)),
+        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c" + ":deu" + "#" + getEncodedKid(certDscDeKid)),
             certDscDeKid, certDscDe, certCscaDe, "deu");
-        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c:xeu#kid2"),
-            "kid2", certDscEu, certCscaEu, "xeu");
-        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c:xex#kid3"),
-            "kid3", federatedCertDscEx, null, "xex");
+        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c" + ":xeu" + "#" + getEncodedKid("kid2")),
+                "kid2", certDscEu, certCscaEu, "xeu");
+        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c" + ":xex" + "#" + getEncodedKid("kid3")),
+                "kid3", federatedCertDscEx, null, "xex");
 
         Assertions.assertTrue(parsed.getVerificationMethod().contains("did:trusted:DE:issuer"));
         Assertions.assertTrue(parsed.getVerificationMethod().contains("did:trusted:EU:issuer"));
@@ -261,7 +262,7 @@ public class DidTrustListServiceTest {
         LinkedHashMap jsonNode = (LinkedHashMap) in;
         Assertions.assertEquals("JsonWebKey2020", jsonNode.get("type"));
         Assertions.assertEquals("d" + ":" + country, jsonNode.get("controller"));
-        Assertions.assertEquals("c" + ":" + country + "#" + URLEncoder.encode(kid, StandardCharsets.UTF_8), jsonNode.get("id"));
+        Assertions.assertEquals("c" + ":" + country + "#" + getEncodedKid(kid), jsonNode.get("id"));
 
         LinkedHashMap publicKeyJwk = (LinkedHashMap) jsonNode.get("publicKeyJwk");
 
@@ -312,5 +313,9 @@ public class DidTrustListServiceTest {
             private String nonce;
 
         }
+    }
+
+    private String getEncodedKid(String kid) {
+        return Base64URL.encode(kid).toString();
     }
 }
