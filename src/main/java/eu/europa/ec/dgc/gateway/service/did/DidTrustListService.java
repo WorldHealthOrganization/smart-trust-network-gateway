@@ -23,6 +23,7 @@ package eu.europa.ec.dgc.gateway.service.did;
 import com.apicatalog.jsonld.document.JsonDocument;
 import com.danubetech.keyformats.crypto.ByteSigner;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.util.Base64URL;
 import eu.europa.ec.dgc.gateway.config.DgcConfigProperties;
 import eu.europa.ec.dgc.gateway.entity.SignerInformationEntity;
 import eu.europa.ec.dgc.gateway.entity.TrustedIssuerEntity;
@@ -262,7 +263,7 @@ public class DidTrustListService {
                 + SEPARATOR_COLON
                 + getCountryAsLowerCaseAlpha3(cert.getCountry())
                 + SEPARATOR_FRAGMENT
-                + URLEncoder.encode(cert.getKid(), StandardCharsets.UTF_8));
+                + getEncodedKid(cert.getKid()));;
         trustListEntry.setController(configProperties.getDid().getTrustListControllerPrefix()
                 + SEPARATOR_COLON + getCountryAsLowerCaseAlpha3(cert.getCountry()));
         trustListEntry.setPublicKeyJwk(publicKeyJwk);
@@ -281,5 +282,9 @@ public class DidTrustListService {
             .filter(tp -> tp.getParsedCertificate().getSubjectX500Principal()
                 .equals(cert.getParsedCertificate().getIssuerX500Principal()))
             .findFirst();
+    }
+
+    private String getEncodedKid(String kid) {
+        return Base64URL.encode(kid).toString();
     }
 }
