@@ -78,7 +78,7 @@ public class CertificateRevocationListDefaultController {
         security = {
             @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEMA_HASH),
             @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEMA_DISTINGUISH_NAME)
-        },git 
+        },
         tags = {"Revocation"},
         summary = "Download Batch List",
         description = "Returning a list of batches with a small wrapper providing metadata."
