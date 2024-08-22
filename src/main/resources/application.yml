@@ -94,6 +94,7 @@ dgc:
       - RACSEL-DDVC
       - IPS
       - DICVP
+      - PH4H
   trustlist:
     cron: "* */5 * * * *"
   did:
