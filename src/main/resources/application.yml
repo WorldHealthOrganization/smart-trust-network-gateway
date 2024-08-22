@@ -67,7 +67,9 @@ dgc:
       pem: X-SSL-Client-Cert
   revocation:
     delete-threshold: 14
-    enabled: false
+    enabled: true
+    hidden:
+        endpoints: false
   signer-information:
     delete-threshold: 14
   trustedCertificates:
