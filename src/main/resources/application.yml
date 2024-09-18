@@ -104,11 +104,11 @@ dgc:
       "[https://w3id.org/security/suites/jws-2020/v1]": jws-2020_v1.json
     didUploadProvider: azure,git
     git:
-      workdir: tng-cdn-dev
+      workdir: tng-participant-XXA
       prefix: trustlist
       url: did.json
       pat: <personal-access-token-for-git>
-      owner: WorldHealthOrganization
+      owner: shreybansod
       branch: main
   countryCodeMap:
     virtualCountries:
