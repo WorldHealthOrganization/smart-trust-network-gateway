@@ -88,7 +88,19 @@ public class GitDidUploader implements DidUploader {
     }    
 
     @Override
-    public void uploadDid(String subContainer, byte[] content) {        
-        // No implementation required
+    public void uploadDid(String subContainer, byte[] content) {
+        
+        String fileContent = new String(content, StandardCharsets.UTF_8);
+        try {
+            uploadFileToGitHub(configProperties.getDid().getGit().getOwner(), 
+                    configProperties.getDid().getGit().getWorkdir(), 
+                    configProperties.getDid().getGit().getPrefix() + "/" 
+                    + subContainer + "/" + configProperties.getDid().getGit().getUrl(), 
+                    fileContent, 
+                    configProperties.getDid().getGit().getPat());
+        } catch (IOException e) {
+            log.error("Error occured while uploading a file to Github");
+        }
+        log.info("Upload successful");
     }
 }
