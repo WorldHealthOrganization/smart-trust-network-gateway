@@ -86,14 +86,7 @@ dgc:
       - displayURL
     allowedDomains:
       - DCC
-      - DDCC
-      - DIVOC
-      - ICAO
-      - SHC
-      - CRED
-      - RACSEL-DDVC
-      - IPS
-      - DICVP
+      - IPS-PILGRIMAGE
       - PH4H
   trustlist:
     cron: "* */5 * * * *"
