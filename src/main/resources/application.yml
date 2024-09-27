@@ -87,6 +87,7 @@ dgc:
     allowedDomains:
       - DCC
       - IPS-PILGRIMAGE
+      - DICVP
       - PH4H
   trustlist:
     cron: "* */5 * * * *"
