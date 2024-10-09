@@ -106,8 +106,18 @@ dgc:
     virtualCountries:
       XA: XXA
       XB: XXB
+      XC: XXC
+      XD: XXD
+      XE: XXE
+      XF: XXF
+      XG: XXG
+      XH: XXH
+      XI: XXI
+      XJ: XXJ
+      XK: XXK
       XO: XXO
-      XL: XCL
+      
+      
   cloudmersive:
     apiKey: 0a0a0a0a-0a0a-0a0a-0a0a-0a0a0a0a0a0a
     url: https://api.cloudmersive.com
