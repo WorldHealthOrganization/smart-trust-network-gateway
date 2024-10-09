@@ -86,13 +86,7 @@ dgc:
       - displayURL
     allowedDomains:
       - DCC
-      - DDCC
-      - DIVOC
-      - ICAO
-      - SHC
-      - CRED
-      - RACSEL-DDVC
-      - IPS
+      - IPS-PILGRIMAGE
       - DICVP
       - PH4H
   trustlist:
