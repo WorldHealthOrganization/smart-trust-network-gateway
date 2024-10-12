@@ -280,8 +280,4 @@ public class DidTrustListService {
                         .equals(cert.getParsedCertificate().getIssuerX500Principal()))
                 .findFirst();
     }
-
-    private String getEncodedKid(String kid) {
-        return Base64URL.encode(kid).toString();
-    }
 }

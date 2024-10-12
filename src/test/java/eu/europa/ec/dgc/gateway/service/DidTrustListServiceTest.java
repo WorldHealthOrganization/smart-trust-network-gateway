@@ -314,8 +314,4 @@ public class DidTrustListServiceTest {
 
         }
     }
-
-    private String getEncodedKid(String kid) {
-        return Base64URL.encode(kid).toString();
-    }
 }
