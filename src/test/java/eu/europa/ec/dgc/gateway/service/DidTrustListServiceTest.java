@@ -221,11 +221,11 @@ public class DidTrustListServiceTest {
         Assertions.assertEquals("b", parsed.getController());
         Assertions.assertEquals(6, parsed.getVerificationMethod().size());
 
-        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c" + ":deu" + "#" + getEncodedKid(certDscDeKid)),
+        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c" + ":deu" + "#" + certDscDeKid),
             certDscDeKid, certDscDe, certCscaDe, "deu");
-        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c" + ":xeu" + "#" + getEncodedKid("kid2")),
+        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c" + ":xeu" + "#" + "kid2"),
                 "kid2", certDscEu, certCscaEu, "xeu");
-        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c" + ":xex" + "#" + getEncodedKid("kid3")),
+        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c" + ":xex" + "#" + "kid3"),
                 "kid3", federatedCertDscEx, null, "xex");
 
         Assertions.assertTrue(parsed.getVerificationMethod().contains("did:trusted:DE:issuer"));
@@ -262,7 +262,7 @@ public class DidTrustListServiceTest {
         LinkedHashMap jsonNode = (LinkedHashMap) in;
         Assertions.assertEquals("JsonWebKey2020", jsonNode.get("type"));
         Assertions.assertEquals("d" + ":" + country, jsonNode.get("controller"));
-        Assertions.assertEquals("c" + ":" + country + "#" + getEncodedKid(kid), jsonNode.get("id"));
+        Assertions.assertEquals("c" + ":" + country + "#" + kid, jsonNode.get("id"));
 
         LinkedHashMap publicKeyJwk = (LinkedHashMap) jsonNode.get("publicKeyJwk");
 
