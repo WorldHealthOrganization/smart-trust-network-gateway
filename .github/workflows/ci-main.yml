@@ -119,7 +119,7 @@ jobs:
         with:
           package-name: ${APP_PACKAGES_URL}
           package-type: container
-          min-versions-to-keep: 5
+          min-versions-to-keep: 3
         env:
           APP_PACKAGES_URL: ghcr.io/worldhealthorganization/ddcc-gateway/ddcc-gateway
           APP_PACKAGES_USERNAME: ${{ github.actor }}
