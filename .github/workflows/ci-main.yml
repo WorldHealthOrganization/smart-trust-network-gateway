@@ -118,6 +118,7 @@ jobs:
       - uses: actions/delete-package-versions@v4
         with:
           package-name: ${APP_PACKAGES_URL}
+          package-type: container
           min-versions-to-keep: 3
         env:
           APP_PACKAGES_URL: ghcr.io/worldhealthorganization/ddcc-gateway/ddcc-gateway
