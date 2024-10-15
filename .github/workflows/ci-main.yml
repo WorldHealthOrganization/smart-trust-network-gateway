@@ -121,7 +121,7 @@ jobs:
           package-type: container
           min-versions-to-keep: 5
         env:
-          APP_PACKAGES_URL: ddcc-gateway%2Fddcc-gateway
+          APP_PACKAGES_URL: ddcc-gateway/ddcc-gateway
           APP_PACKAGES_USERNAME: ${{ github.actor }}
           APP_PACKAGES_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
   license:
