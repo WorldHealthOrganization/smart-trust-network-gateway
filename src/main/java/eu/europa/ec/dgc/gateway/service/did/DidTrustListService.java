@@ -184,21 +184,30 @@ public class DidTrustListService {
                 configProperties.getDid().getIncludeFederated());
 
         for (TrustedCertificateTrustList cert : certs) {
+            try {
+                PublicKey publicKey = cert.getParsedCertificate().getPublicKey();
 
-            PublicKey publicKey = cert.getParsedCertificate().getPublicKey();
+                if (publicKey instanceof RSAPublicKey rsaPublicKey) {
+                    addTrustListEntry(trustList, cert,
+                            new DidTrustListEntryDto.RsaPublicKeyJwk(rsaPublicKey, List.of(cert.getCertificate())));
 
-            if (publicKey instanceof RSAPublicKey rsaPublicKey) {
-                addTrustListEntry(trustList, cert,
-                        new DidTrustListEntryDto.RsaPublicKeyJwk(rsaPublicKey, List.of(cert.getCertificate())));
+                } else if (publicKey instanceof ECPublicKey ecPublicKey) {
+                    addTrustListEntry(trustList, cert,
+                            new DidTrustListEntryDto.EcPublicKeyJwk(ecPublicKey, List.of(cert.getCertificate())));
 
-            } else if (publicKey instanceof ECPublicKey ecPublicKey) {
-                addTrustListEntry(trustList, cert,
-                        new DidTrustListEntryDto.EcPublicKeyJwk(ecPublicKey, List.of(cert.getCertificate())));
+                } else {
+                    log.error("Public Key is not RSA or EC Public Key for cert {} of country {}",
+                                cert.getThumbprint(),
+                                cert.getCountry());
+                }
+            } catch (Exception exception) {
+                String failedFor = " Domain -- " + cert.getDomain() + ","
+                        + " Country -- " + cert.getCountry() + ","
+                        + " Group -- " + cert.getGroup() + ","
+                        + " KID -- " + cert.getKid();
 
-            } else {
-                log.error("Public Key is not RSA or EC Public Key for cert {} of country {}",
-                        cert.getThumbprint(),
-                        cert.getCountry());
+                log.error("PublicKey Export Generation Failed for : [" + failedFor + " ]"
+                        + "\n" + " Exception : " + exception.getMessage());
             }
         }
 
