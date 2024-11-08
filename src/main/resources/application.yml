@@ -108,7 +108,7 @@ dgc:
       prefix: trustlist
       url: did.json
       pat: <personal-access-token-for-git>
-      owner: shreybansod
+      owner: <user-with-owner-rights-in-the-target-repo>
       branch: main
   countryCodeMap:
     virtualCountries:
