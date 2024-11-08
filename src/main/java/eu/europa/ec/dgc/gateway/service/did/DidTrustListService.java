@@ -41,7 +41,6 @@ import info.weboftrust.ldsignatures.signer.JsonWebSignature2020LdSigner;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.PublicKey;
 import java.security.cert.CertificateEncodingException;
@@ -64,7 +63,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -76,8 +74,8 @@ public class DidTrustListService {
     private static final String SEPARATOR_FRAGMENT = "#";
 
     private static final List<String> DID_CONTEXTS = List.of(
-        "https://www.w3.org/ns/did/v1",
-        "https://w3id.org/security/suites/jws-2020/v1");
+            "https://www.w3.org/ns/did/v1",
+            "https://w3id.org/security/suites/jws-2020/v1");
 
     private final TrustedIssuerService trustedIssuerService;
 
@@ -148,19 +146,19 @@ public class DidTrustListService {
         }
 
         return configProperties.getCountryCodeMap().getVirtualCountries()
-            .compute(country, (alpha2, alpha3) -> {
-                if (alpha3 != null) {
-                    return alpha3.toLowerCase();
-                }
+                .compute(country, (alpha2, alpha3) -> {
+                    if (alpha3 != null) {
+                        return alpha3.toLowerCase();
+                    }
 
-                try {
-                    return new Locale("en", alpha2).getISO3Country().toLowerCase();
-                } catch (MissingResourceException e) {
-                    log.error("Country Code to alpha 3 conversion issue for country {} : {}",
-                        country, e.getMessage());
-                    return null;
-                }
-            });
+                    try {
+                        return new Locale("en", alpha2).getISO3Country().toLowerCase();
+                    } catch (MissingResourceException e) {
+                        log.error("Country Code to alpha 3 conversion issue for country {} : {}",
+                                country, e.getMessage());
+                        return null;
+                    }
+                });
     }
 
     private String generateTrustList(List<String> countries) throws Exception {
@@ -181,36 +179,44 @@ public class DidTrustListService {
 
         // Add DSC
         List<TrustedCertificateTrustList> certs = trustListService.getTrustedCertificateTrustList(
-            SignerInformationEntity.CertificateType.stringValues(),
-            countries,
-            null,
-            configProperties.getDid().getIncludeFederated()
-        );
+                SignerInformationEntity.CertificateType.stringValues(),
+                countries,
+                null,
+                configProperties.getDid().getIncludeFederated());
 
         for (TrustedCertificateTrustList cert : certs) {
+            try {
+                PublicKey publicKey = cert.getParsedCertificate().getPublicKey();
 
-            PublicKey publicKey = cert.getParsedCertificate().getPublicKey();
+                if (publicKey instanceof RSAPublicKey rsaPublicKey) {
+                    addTrustListEntry(trustList, cert,
+                            new DidTrustListEntryDto.RsaPublicKeyJwk(rsaPublicKey, List.of(cert.getCertificate())));
 
-            if (publicKey instanceof RSAPublicKey rsaPublicKey) {
-                addTrustListEntry(trustList, cert,
-                    new DidTrustListEntryDto.RsaPublicKeyJwk(rsaPublicKey, List.of(cert.getCertificate())));
+                } else if (publicKey instanceof ECPublicKey ecPublicKey) {
+                    addTrustListEntry(trustList, cert,
+                            new DidTrustListEntryDto.EcPublicKeyJwk(ecPublicKey, List.of(cert.getCertificate())));
 
-            } else if (publicKey instanceof ECPublicKey ecPublicKey) {
-                addTrustListEntry(trustList, cert,
-                    new DidTrustListEntryDto.EcPublicKeyJwk(ecPublicKey, List.of(cert.getCertificate())));
+                } else {
+                    log.error("Public Key is not RSA or EC Public Key for cert {} of country {}",
+                                cert.getThumbprint(),
+                                cert.getCountry());
+                }
+            } catch (Exception exception) {
+                String failedFor = " Domain -- " + cert.getDomain() + ","
+                        + " Country -- " + cert.getCountry() + ","
+                        + " Group -- " + cert.getGroup() + ","
+                        + " KID -- " + cert.getKid();
 
-            } else {
-                log.error("Public Key is not RSA or EC Public Key for cert {} of country {}",
-                    cert.getThumbprint(),
-                    cert.getCountry());
+                log.error("PublicKey Export Generation Failed for : [" + failedFor + " ]"
+                        + "\n" + " Exception : " + exception.getMessage());
             }
         }
 
         // Add TrustedIssuer
         trustedIssuerService.search(
                 null, countries, configProperties.getDid().getIncludeFederated()).stream()
-            .filter(trustedIssuer -> trustedIssuer.getUrlType() == TrustedIssuerEntity.UrlType.DID)
-            .forEach(trustedIssuer -> trustList.getVerificationMethod().add(trustedIssuer.getUrl()));
+                .filter(trustedIssuer -> trustedIssuer.getUrlType() == TrustedIssuerEntity.UrlType.DID)
+                .forEach(trustedIssuer -> trustList.getVerificationMethod().add(trustedIssuer.getUrl()));
 
         // Create LD-Proof Document
         JsonWebSignature2020LdSigner signer = new JsonWebSignature2020LdSigner(byteSigner);
@@ -230,7 +236,7 @@ public class DidTrustListService {
             }
 
             try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(
-                "did_contexts/" + didContextFile)) {
+                    "did_contexts/" + didContextFile)) {
                 if (inputStream != null) {
                     contextMap.put(URI.create(didContext), JsonDocument.of(inputStream));
                 }
@@ -248,14 +254,14 @@ public class DidTrustListService {
     }
 
     private void addTrustListEntry(DidTrustListDto trustList,
-                                   TrustedCertificateTrustList cert,
-                                   DidTrustListEntryDto.PublicKeyJwk publicKeyJwk)
+            TrustedCertificateTrustList cert,
+            DidTrustListEntryDto.PublicKeyJwk publicKeyJwk)
             throws CertificateEncodingException, UnsupportedEncodingException {
         Optional<TrustedCertificateTrustList> csca = searchForIssuer(cert);
 
         if (csca.isPresent()) {
             publicKeyJwk.getEncodedX509Certificates()
-                .add(Base64.getEncoder().encodeToString(csca.get().getParsedCertificate().getEncoded()));
+                    .add(Base64.getEncoder().encodeToString(csca.get().getParsedCertificate().getEncoded()));
         }
 
         DidTrustListEntryDto trustListEntry = new DidTrustListEntryDto();
@@ -264,7 +270,7 @@ public class DidTrustListService {
                 + SEPARATOR_COLON
                 + getCountryAsLowerCaseAlpha3(cert.getCountry())
                 + SEPARATOR_FRAGMENT
-                + getEncodedKid(cert.getKid()));;
+                + cert.getKid());
         trustListEntry.setController(configProperties.getDid().getTrustListControllerPrefix()
                 + SEPARATOR_COLON + getCountryAsLowerCaseAlpha3(cert.getCountry()));
         trustListEntry.setPublicKeyJwk(publicKeyJwk);
@@ -280,12 +286,8 @@ public class DidTrustListService {
                 List.of(cert.getCountry()),
                 List.of(cert.getDomain()),
                 configProperties.getDid().getIncludeFederated()).stream()
-            .filter(tp -> tp.getParsedCertificate().getSubjectX500Principal()
-                .equals(cert.getParsedCertificate().getIssuerX500Principal()))
-            .findFirst();
-    }
-
-    private String getEncodedKid(String kid) {
-        return Base64URL.encode(kid).toString();
+                .filter(tp -> tp.getParsedCertificate().getSubjectX500Principal()
+                        .equals(cert.getParsedCertificate().getIssuerX500Principal()))
+                .findFirst();
     }
 }
