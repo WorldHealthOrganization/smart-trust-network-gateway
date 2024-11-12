@@ -21,14 +21,14 @@
 package eu.europa.ec.dgc.gateway.service.did;
 
 import java.util.List;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+@RequiredArgsConstructor
 @Service
 public class DidUploadInvoker {
     
-    @Autowired
-    List<DidUploader> didUploaders;
+    private final List<DidUploader> didUploaders;
     
     /**
      * Method invokes the DID document upload of all the DidUploader implementations. 
