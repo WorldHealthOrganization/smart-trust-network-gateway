@@ -96,7 +96,7 @@ dgc:
     contextMapping:
       "[https://www.w3.org/ns/did/v1]": did_v1.json
       "[https://w3id.org/security/suites/jws-2020/v1]": jws-2020_v1.json
-    didUploadProvider: azure,git
+    #didUploadProvider: azure,git # enable in case to upload the DID to azure or git and to run Docker Image locally
     git:
       workdir: tng-participant-XXA
       prefix: trustlist
