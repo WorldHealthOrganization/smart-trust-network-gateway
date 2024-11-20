@@ -20,6 +20,7 @@
 
 package eu.europa.ec.dgc.gateway.service.did;
 
+import eu.europa.ec.dgc.gateway.config.DgcConfigProperties;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -28,15 +29,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Service;
-
-import eu.europa.ec.dgc.gateway.config.DgcConfigProperties;
-import lombok.extern.slf4j.Slf4j;
 
 @ConditionalOnExpression("'${dgc.did.didUploadProvider}'.contains('git')")
 @Service
@@ -52,13 +50,13 @@ public class GitDidUploader implements DidUploader {
     
     @Override
     public void uploadDid(byte[] content) {
-    	Path targetDirectory = Paths.get(configProperties.getDid().getGit().getWorkdir() 
-    	          + File.separator 
-    	          + configProperties.getDid().getGit().getPrefix());
-    	
-    	deleteDirectoryAndContents(configProperties.getDid().getGit().getWorkdir());
-    	
-    	try {
+        Path targetDirectory = Paths.get(configProperties.getDid().getGit().getWorkdir() 
+               + File.separator 
+               + configProperties.getDid().getGit().getPrefix());
+        
+        deleteDirectoryAndContents(configProperties.getDid().getGit().getWorkdir());
+        
+        try {
             Git.cloneRepository()
             .setURI(configProperties.getDid().getGit().getUrl())
             .setDirectory(new File(configProperties.getDid().getGit().getWorkdir()))
@@ -70,14 +68,15 @@ public class GitDidUploader implements DidUploader {
             log.error("Failed to clone repository {}: {}",
                       configProperties.getDid().getGit().getUrl(), e.getMessage());
         }
-    	
-    	try {
-    		File outputFile = new File(targetDirectory.toString() + File.separator + "did.json");
-    		try (FileOutputStream outputStream = new FileOutputStream(outputFile)) {
-    		    outputStream.write(content);
-    		}
+        
+        try {
+            File outputFile = new File(targetDirectory.toString() + File.separator + "did.json");
+            try (FileOutputStream outputStream = new FileOutputStream(outputFile)) {
+                outputStream.write(content);
+            }
             Git git = Git.open(new File(configProperties.getDid().getGit().getWorkdir()));
-            git.add().addFilepattern(configProperties.getDid().getGit().getPrefix() + File.separator + outputFile.getName()).call();
+            git.add().addFilepattern(configProperties.getDid().getGit().getPrefix() 
+                + File.separator + outputFile.getName()).call();
             git.commit().setMessage("Added DID files on " + Instant.now()).call();
             git.push().setCredentialsProvider(new UsernamePasswordCredentialsProvider(
                 "anonymous", configProperties.getDid().getGit().getPat())).call();
@@ -87,7 +86,13 @@ public class GitDidUploader implements DidUploader {
         } catch (GitAPIException | IOException e) {
             log.error("Error during Git commit & push: {}",e.getMessage());
         }
-    	
+        
+    }
+    
+    @Override
+    public void uploadDid(String subContainer, byte[] content) {
+              
+        log.trace("Upload not required");
     }
 
     private void deleteDirectoryAndContents(String directoryPath) {
@@ -113,11 +118,6 @@ public class GitDidUploader implements DidUploader {
         } else {
             log.info("Directory {} does not exist, skippig deletion", dir);
         }
-    }
+    }    
     
-    @Override
-    public void uploadDid(String subContainer, byte[] content) {
-              
-        log.trace("Upload not required");
-    }
 }
