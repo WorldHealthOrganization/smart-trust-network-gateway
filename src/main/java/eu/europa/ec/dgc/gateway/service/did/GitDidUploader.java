@@ -24,8 +24,6 @@ import eu.europa.ec.dgc.gateway.config.DgcConfigProperties;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -54,7 +52,7 @@ public class GitDidUploader implements DidUploader {
                + File.separator 
                + configProperties.getDid().getGit().getPrefix());
         
-        deleteDirectoryAndContents(configProperties.getDid().getGit().getWorkdir());
+        deleteDirectoryAndContents(new File(configProperties.getDid().getGit().getWorkdir()));
         
         try {
             Git.cloneRepository()
@@ -75,8 +73,7 @@ public class GitDidUploader implements DidUploader {
                 outputStream.write(content);
             }
             Git git = Git.open(new File(configProperties.getDid().getGit().getWorkdir()));
-            git.add().addFilepattern(configProperties.getDid().getGit().getPrefix() 
-                + File.separator + outputFile.getName()).call();
+            git.add().addFilepattern(".").call();
             git.commit().setMessage("Added DID files on " + Instant.now()).call();
             git.push().setCredentialsProvider(new UsernamePasswordCredentialsProvider(
                 "anonymous", configProperties.getDid().getGit().getPat())).call();
@@ -95,29 +92,16 @@ public class GitDidUploader implements DidUploader {
         log.trace("Upload not required");
     }
 
-    private void deleteDirectoryAndContents(String directoryPath) {
-        Path dir = Paths.get(directoryPath);
-        if (dir.toFile().exists()) {
-    
-            try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
-                for (Path path : stream) {
-                    if (Files.isDirectory(path)) {
-                        deleteDirectoryAndContents(path.toString());
-                    } else {
-                        Files.delete(path);
-                    }
+    private void deleteDirectoryAndContents(File directory) {
+        if (directory.isDirectory()) {
+            File[] files = directory.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    deleteDirectoryAndContents(file);
                 }
-            } catch (IOException e) {
-                log.error("Error deleting file {}",e.getMessage());
             }
-            try {
-                Files.delete(dir);
-            } catch (IOException e) {
-                log.error("Error deleting root directory {}",e.getMessage());
-            }
-        } else {
-            log.info("Directory {} does not exist, skippig deletion", dir);
         }
+        directory.delete();
     }    
     
 }
