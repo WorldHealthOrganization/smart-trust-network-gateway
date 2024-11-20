@@ -96,11 +96,11 @@ dgc:
     contextMapping:
       "[https://www.w3.org/ns/did/v1]": did_v1.json
       "[https://w3id.org/security/suites/jws-2020/v1]": jws-2020_v1.json
-    didUploadProvider: azure,git
+    didUploadProvider: dummy
     git:
       workdir: tng-participant-XXA
       prefix: trustlist
-      url: did.json
+      url: https://github.com/shreybansod/tng-participant-XXA.git
       pat: <personal-access-token-for-git>
       owner: <user-with-owner-rights-in-the-target-repo>
       branch: main
