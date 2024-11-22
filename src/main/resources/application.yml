@@ -98,9 +98,9 @@ dgc:
       "[https://w3id.org/security/suites/jws-2020/v1]": jws-2020_v1.json
     didUploadProvider: dummy
     git:
-      workdir: tng-participant-XXA
+      workdir: tng-cdn-dev
       prefix: trustlist
-      url: https://github.com/shreybansod/tng-participant-XXA.git
+      url: https://github.com/WorldHealthOrganization/tng-cdn-dev
       pat: <personal-access-token-for-git>
       owner: <user-with-owner-rights-in-the-target-repo>
       branch: main
