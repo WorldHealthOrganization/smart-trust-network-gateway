@@ -98,7 +98,7 @@ dgc:
       "[https://w3id.org/security/suites/jws-2020/v1]": jws-2020_v1.json
     didUploadProvider: dummy
     git:
-      workdir: tng-cdn-dev
+      workdir: /tmp/tng-cdn-dev
       prefix: trustlist
       url: https://github.com/WorldHealthOrganization/tng-cdn-dev
       pat: <personal-access-token-for-git>
