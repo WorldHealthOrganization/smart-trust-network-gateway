@@ -68,14 +68,14 @@ public class GitDidUploader implements DidUploader {
         }
         
         try {
-        	if(!targetDirectory.toFile().exists() ) {
-    			targetDirectory.toFile().mkdir();
-    		}
+            if (!targetDirectory.toFile().exists()) {
+                targetDirectory.toFile().mkdir();
+            }
             File outputFile = new File(targetDirectory.toString() + File.separator + "did.json");
             try (FileOutputStream outputStream = new FileOutputStream(outputFile)) {
                 outputStream.write(content);
-            }catch (Exception ex) {
-            	log.error("Error occured while creating file : {}", outputFile.getPath());
+            } catch (Exception ex) {
+                log.error("Error occured while creating file : {}", outputFile.getPath());
             }
             Git git = Git.open(new File(configProperties.getDid().getGit().getWorkdir()));
             git.add().addFilepattern(".").call();
