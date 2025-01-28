@@ -111,7 +111,7 @@ jobs:
           docker push "${APP_PACKAGES_URL}:${APP_VERSION}";
       - uses: actions/delete-package-versions@v5
         with:
-          package-name: ${APP_PACKAGES_URL}
+          package-name: ddcc-gateway/ddcc-gateway
           package-type: container
           min-versions-to-keep: 3
   license:
