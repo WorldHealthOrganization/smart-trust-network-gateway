@@ -48,17 +48,17 @@ jobs:
           --define app.packages.username="${APP_PACKAGES_USERNAME}"
           --define app.packages.password="${APP_PACKAGES_PASSWORD}";
       - name: Upload ZIP for TST
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: DDCCG001_TST
           path: target/DDCCG001_TST*
       - name: Upload ZIP for ACC
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: DDCCG001_ACC
           path: target/DDCCG001_ACC*
       - name: Upload ZIP for PRD
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: DDCCG001_PRD
           path: target/DDCCG001_PRD*
