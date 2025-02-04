@@ -49,6 +49,7 @@ ThirdParty Licenses
 | com.google.j2objc:j2objc-annotations:1.3 | The Apache Software License, Version 2.0 |
 | com.google.protobuf:protobuf-javalite:3.21.12 | BSD-3-Clause |
 | com.google.re2j:re2j:1.6 | Go License |
+| com.googlecode.javaewah:JavaEWAH:1.2.3 | Apache 2 |
 | com.h2database:h2:2.2.220 | EPL 1.0 MPL 2.0 |
 | com.jayway.jsonpath:json-path:2.7.0 | The Apache Software License, Version 2.0 |
 | com.microsoft.azure:msal4j:1.14.0 | MIT License |
@@ -159,6 +160,7 @@ ThirdParty Licenses
 | org.checkerframework:checker-qual:3.5.0 | The MIT License |
 | org.codehaus.woodstox:stax2-api:4.2.1 | The BSD License |
 | org.eclipse.angus:angus-activation:2.0.1 | EDL 1.0 |
+| org.eclipse.jgit:org.eclipse.jgit:6.9.0.202403050737-r | BSD-3-Clause |
 | org.glassfish:jakarta.json:2.0.0 | Eclipse Public License 2.0 GNU General Public License, version 2 with the GNU Classpath Exception |
 | org.glassfish.jaxb:jaxb-core:4.0.3 | Eclipse Distribution License - v 1.0 |
 | org.glassfish.jaxb:jaxb-runtime:4.0.3 | Eclipse Distribution License - v 1.0 |
