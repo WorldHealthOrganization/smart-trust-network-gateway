@@ -33,7 +33,7 @@ import eu.europa.ec.dgc.gateway.repository.TrustedIssuerRepository;
 import eu.europa.ec.dgc.gateway.repository.TrustedPartyRepository;
 import eu.europa.ec.dgc.gateway.restapi.dto.did.DidTrustListDto;
 import eu.europa.ec.dgc.gateway.service.did.DidTrustListService;
-import eu.europa.ec.dgc.gateway.service.did.DidUploader;
+import eu.europa.ec.dgc.gateway.service.did.DidUploadInvoker;
 import eu.europa.ec.dgc.gateway.testdata.CertificateTestUtils;
 import eu.europa.ec.dgc.gateway.testdata.TrustedIssuerTestHelper;
 import eu.europa.ec.dgc.gateway.testdata.TrustedPartyTestHelper;
@@ -101,7 +101,7 @@ public class DidTrustListServiceTest {
     CertificateUtils certificateUtils;
 
     @MockBean
-    DidUploader didUploaderMock;
+    DidUploadInvoker didUploadInvokerMock;
 
     X509Certificate certUploadDe, certUploadEu, certCscaDe, certCscaEu, certAuthDe, certAuthEu, certDscDe, certDscEu,
         federatedCertDscEx;
@@ -210,7 +210,7 @@ public class DidTrustListServiceTest {
             testData(CertificateTestUtils.SignerType.RSA);
         }
         ArgumentCaptor<byte[]> uploadArgumentCaptor = ArgumentCaptor.forClass(byte[].class);
-        doNothing().when(didUploaderMock).uploadDid(uploadArgumentCaptor.capture());
+        doNothing().when(didUploadInvokerMock).uploadDid(uploadArgumentCaptor.capture());
 
         didTrustListService.job();
 
