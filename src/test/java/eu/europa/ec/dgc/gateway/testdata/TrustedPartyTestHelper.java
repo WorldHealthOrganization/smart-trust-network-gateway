@@ -46,21 +46,24 @@ public class TrustedPartyTestHelper {
         TrustedPartyEntity.CertificateType.AUTHENTICATION, new HashMap<>(),
         TrustedPartyEntity.CertificateType.CSCA, new HashMap<>(),
         TrustedPartyEntity.CertificateType.UPLOAD, new HashMap<>(),
-        TrustedPartyEntity.CertificateType.TRUSTANCHOR, new HashMap<>()
+        TrustedPartyEntity.CertificateType.TRUSTANCHOR, new HashMap<>(),
+        TrustedPartyEntity.CertificateType.DECA, new HashMap<>()
     );
 
     private final Map<TrustedPartyEntity.CertificateType, Map<String, X509Certificate>> certificateMap = Map.of(
         TrustedPartyEntity.CertificateType.AUTHENTICATION, new HashMap<>(),
         TrustedPartyEntity.CertificateType.CSCA, new HashMap<>(),
         TrustedPartyEntity.CertificateType.UPLOAD, new HashMap<>(),
-        TrustedPartyEntity.CertificateType.TRUSTANCHOR, new HashMap<>()
+        TrustedPartyEntity.CertificateType.TRUSTANCHOR, new HashMap<>(),
+        TrustedPartyEntity.CertificateType.DECA, new HashMap<>()
     );
 
     private final Map<TrustedPartyEntity.CertificateType, Map<String, PrivateKey>> privateKeyMap = Map.of(
         TrustedPartyEntity.CertificateType.AUTHENTICATION, new HashMap<>(),
         TrustedPartyEntity.CertificateType.CSCA, new HashMap<>(),
         TrustedPartyEntity.CertificateType.UPLOAD, new HashMap<>(),
-        TrustedPartyEntity.CertificateType.TRUSTANCHOR, new HashMap<>()
+        TrustedPartyEntity.CertificateType.TRUSTANCHOR, new HashMap<>(),
+        TrustedPartyEntity.CertificateType.DECA, new HashMap<>()
     );
 
     private final TrustedPartyRepository trustedPartyRepository;
