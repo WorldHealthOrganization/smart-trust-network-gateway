@@ -113,7 +113,7 @@ jobs:
         with:
           package-name: ddcc-gateway/ddcc-gateway
           package-type: container
-          min-versions-to-keep: 3
+          min-versions-to-keep: 7
   license:
     runs-on: ubuntu-latest
     steps:
