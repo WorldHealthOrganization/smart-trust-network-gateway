@@ -114,6 +114,7 @@ jobs:
           package-name: ddcc-gateway/ddcc-gateway
           package-type: container
           min-versions-to-keep: 7
+          ignore-versions: '^[1-9]{1,}\.\d*\.\d*$'
   license:
     runs-on: ubuntu-latest
     steps:
