@@ -132,7 +132,10 @@ public class TrustedPartyEntity extends FederatedEntity {
         /**
          * Certificate used to offline sign entries in database (NBTA).
          */
-        TRUSTANCHOR;
+        TRUSTANCHOR,
+
+
+        DECA;
 
         /**
          * Return a List of allowed CertificateType as String List.
