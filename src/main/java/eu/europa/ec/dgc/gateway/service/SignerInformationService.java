@@ -36,6 +36,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -162,12 +163,15 @@ public class SignerInformationService {
         if (group == null || group.equals("DSC")) {
             contentCheckCountryOfOrigin(uploadedCertificate, authenticatedCountryCode);
         }
+        if (Objects.isNull(group)) {
+            group = "DSC";
+        }
         contentCheckOneOf(group, SignerInformationEntity.CertificateType.stringValues());
         contentCheckOneOf(domain, configProperties.getTrustedCertificates().getAllowedDomains());
         for (String key : properties.keySet()) {
             contentCheckOneOf(key, configProperties.getTrustedCertificates().getAllowedProperties());
         }
-        contentCheckCsca(uploadedCertificate, authenticatedCountryCode);
+        contentCheckCsca(uploadedCertificate, authenticatedCountryCode, group);
         contentCheckAlreadyExists(uploadedCertificate);
         contentCheckKidAlreadyExists(uploadedCertificate, kid);
 
@@ -183,13 +187,12 @@ public class SignerInformationService {
         newSignerInformation.setCountry(authenticatedCountryCode);
         newSignerInformation.setRawData(Base64.getEncoder().encodeToString(certRawData));
         newSignerInformation.setThumbprint(certificateUtils.getCertThumbprint(uploadedCertificate));
-        newSignerInformation.setCertificateType(SignerInformationEntity.CertificateType.DSC);
+        newSignerInformation.setCertificateType(
+                SignerInformationEntity.CertificateType.valueOf(group) == SignerInformationEntity.CertificateType.DESC
+                ? SignerInformationEntity.CertificateType.DESC : SignerInformationEntity.CertificateType.DSC);
         newSignerInformation.setSignature(signature);
         newSignerInformation.setKid(kid);
         newSignerInformation.setDomain(domain == null ? "DCC" : domain);
-        if (group != null) {
-            newSignerInformation.setCertificateType(SignerInformationEntity.CertificateType.valueOf(group));
-        }
         if (!properties.isEmpty()) {
             try {
                 newSignerInformation.setProperties(objectMapper.writeValueAsString(properties));
@@ -232,9 +235,13 @@ public class SignerInformationService {
             () -> new SignerCertCheckException(SignerCertCheckException.Reason.EXIST_CHECK_FAILED,
                 "Uploaded certificate does not exists"));
 
+        String signerCertificateType = Optional.ofNullable(
+                signerInformationEntity.getCertificateType())
+                .map(Enum::toString)
+                .orElse(SignerInformationEntity.CertificateType.DSC.toString());
         contentCheckUploaderCertificate(signerCertificate, authenticatedCountryCode);
         contentCheckCountryOfOrigin(uploadedCertificate, authenticatedCountryCode);
-        contentCheckCsca(uploadedCertificate, authenticatedCountryCode);
+        contentCheckCsca(uploadedCertificate, authenticatedCountryCode, signerCertificateType);
 
         byte[] certRawData;
         try {
@@ -245,7 +252,8 @@ public class SignerInformationService {
 
         signerInformationEntity.setRawData(Base64.getEncoder().encodeToString(certRawData));
         signerInformationEntity.setThumbprint(certificateUtils.getCertThumbprint(uploadedCertificate));
-        signerInformationEntity.setCertificateType(SignerInformationEntity.CertificateType.DSC);
+        signerInformationEntity.setCertificateType(
+                SignerInformationEntity.CertificateType.valueOf(signerCertificateType));
         signerInformationEntity.setSignature(signature);
 
         log.info("Updating SignerInformation Entity");
@@ -462,11 +470,14 @@ public class SignerInformationService {
     }
 
     private void contentCheckCsca(X509CertificateHolder uploadedCertificate,
-                                  String authenticatedCountryCode) throws SignerCertCheckException {
+                                  String authenticatedCountryCode, String group) throws SignerCertCheckException {
 
         // Content Check Step 3: CSCA Check
         List<TrustedPartyEntity> trustedCas =
-            trustedPartyService.getCertificate(authenticatedCountryCode, TrustedPartyEntity.CertificateType.CSCA);
+            trustedPartyService.getCertificate(authenticatedCountryCode,
+                    SignerInformationEntity.CertificateType.valueOf(group)
+                            == SignerInformationEntity.CertificateType.DESC
+                            ? TrustedPartyEntity.CertificateType.DECA : TrustedPartyEntity.CertificateType.CSCA);
 
         if (trustedCas.isEmpty()) {
             throw new SignerCertCheckException(SignerCertCheckException.Reason.CSCA_CHECK_FAILED,

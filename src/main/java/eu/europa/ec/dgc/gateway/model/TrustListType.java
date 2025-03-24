@@ -26,5 +26,7 @@ public enum TrustListType {
     UPLOAD,
     CSCA,
     AUTHENTICATION,
-    TRUSTANCHOR
+    TRUSTANCHOR,
+    DESC,
+    DECA
 }

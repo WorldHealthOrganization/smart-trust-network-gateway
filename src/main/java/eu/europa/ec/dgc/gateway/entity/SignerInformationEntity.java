@@ -109,7 +109,9 @@ public class SignerInformationEntity extends FederatedEntity {
 
         AUTH,
 
-        CUSTOM;
+        CUSTOM,
+
+        DESC;
 
         /**
          * Return a List of allowed CertificateType as String List.
