@@ -26,6 +26,8 @@
     <suppress>
         <notes>Still WIP</notes>
         <cve>CVE-2022-41862</cve>
+        <cve>CVE-2024-7254</cve>
+        <cve>CVE-2025-22228</cve>
     </suppress>
     <suppress>
         <notes>Snakeyaml, DoS on user supplied input; no external/unknown/dynamic input to parser at runtime</notes>

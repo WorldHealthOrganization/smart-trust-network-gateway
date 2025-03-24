@@ -20,6 +20,7 @@ jobs:
         with:
           path: |
             ~/.m2/repository
+            ./CVE-Files
           key: ${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
       - name: mvn
         run: >-

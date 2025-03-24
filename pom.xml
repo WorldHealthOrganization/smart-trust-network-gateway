@@ -398,6 +398,7 @@
                 <artifactId>dependency-check-maven</artifactId>
                 <version>${owasp.version}</version>
                 <configuration>
+                    <dataDirectory>./CVE-files</dataDirectory>
                     <suppressionFile>./owasp/suppressions.xml</suppressionFile>
                     <failBuildOnCVSS>8</failBuildOnCVSS>
                     <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
