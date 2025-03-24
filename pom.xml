@@ -47,7 +47,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <!-- dependencies -->
-        <owasp.version>8.3.1</owasp.version>
+        <owasp.version>12.0.2</owasp.version>
         <springdoc.version>2.1.0</springdoc.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <bcpkix.version>1.76</bcpkix.version>
