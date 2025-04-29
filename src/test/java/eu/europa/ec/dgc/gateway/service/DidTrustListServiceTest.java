@@ -23,6 +23,7 @@ package eu.europa.ec.dgc.gateway.service;
 import static org.mockito.Mockito.doNothing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.util.Base64URL;
 import eu.europa.ec.dgc.gateway.entity.FederationGatewayEntity;
 import eu.europa.ec.dgc.gateway.entity.SignerInformationEntity;
 import eu.europa.ec.dgc.gateway.entity.TrustedPartyEntity;
@@ -32,7 +33,7 @@ import eu.europa.ec.dgc.gateway.repository.TrustedIssuerRepository;
 import eu.europa.ec.dgc.gateway.repository.TrustedPartyRepository;
 import eu.europa.ec.dgc.gateway.restapi.dto.did.DidTrustListDto;
 import eu.europa.ec.dgc.gateway.service.did.DidTrustListService;
-import eu.europa.ec.dgc.gateway.service.did.DidUploader;
+import eu.europa.ec.dgc.gateway.service.did.DidUploadInvoker;
 import eu.europa.ec.dgc.gateway.testdata.CertificateTestUtils;
 import eu.europa.ec.dgc.gateway.testdata.TrustedIssuerTestHelper;
 import eu.europa.ec.dgc.gateway.testdata.TrustedPartyTestHelper;
@@ -100,7 +101,7 @@ public class DidTrustListServiceTest {
     CertificateUtils certificateUtils;
 
     @MockBean
-    DidUploader didUploaderMock;
+    DidUploadInvoker didUploadInvokerMock;
 
     X509Certificate certUploadDe, certUploadEu, certCscaDe, certCscaEu, certAuthDe, certAuthEu, certDscDe, certDscEu,
         federatedCertDscEx;
@@ -209,7 +210,7 @@ public class DidTrustListServiceTest {
             testData(CertificateTestUtils.SignerType.RSA);
         }
         ArgumentCaptor<byte[]> uploadArgumentCaptor = ArgumentCaptor.forClass(byte[].class);
-        doNothing().when(didUploaderMock).uploadDid(uploadArgumentCaptor.capture());
+        doNothing().when(didUploadInvokerMock).uploadDid(uploadArgumentCaptor.capture());
 
         didTrustListService.job();
 
@@ -220,12 +221,12 @@ public class DidTrustListServiceTest {
         Assertions.assertEquals("b", parsed.getController());
         Assertions.assertEquals(6, parsed.getVerificationMethod().size());
 
-        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c" + ":deu" + "#" + URLEncoder.encode(certDscDeKid, StandardCharsets.UTF_8)),
+        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c" + ":deu" + "#" + certDscDeKid),
             certDscDeKid, certDscDe, certCscaDe, "deu");
-        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c:xeu#kid2"),
-            "kid2", certDscEu, certCscaEu, "xeu");
-        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c:xex#kid3"),
-            "kid3", federatedCertDscEx, null, "xex");
+        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c" + ":xeu" + "#" + "kid2"),
+                "kid2", certDscEu, certCscaEu, "xeu");
+        assertVerificationMethod(getVerificationMethodByKid(parsed.getVerificationMethod(), "c" + ":xex" + "#" + "kid3"),
+                "kid3", federatedCertDscEx, null, "xex");
 
         Assertions.assertTrue(parsed.getVerificationMethod().contains("did:trusted:DE:issuer"));
         Assertions.assertTrue(parsed.getVerificationMethod().contains("did:trusted:EU:issuer"));
@@ -261,7 +262,7 @@ public class DidTrustListServiceTest {
         LinkedHashMap jsonNode = (LinkedHashMap) in;
         Assertions.assertEquals("JsonWebKey2020", jsonNode.get("type"));
         Assertions.assertEquals("d" + ":" + country, jsonNode.get("controller"));
-        Assertions.assertEquals("c" + ":" + country + "#" + URLEncoder.encode(kid, StandardCharsets.UTF_8), jsonNode.get("id"));
+        Assertions.assertEquals("c" + ":" + country + "#" + kid, jsonNode.get("id"));
 
         LinkedHashMap publicKeyJwk = (LinkedHashMap) jsonNode.get("publicKeyJwk");
 

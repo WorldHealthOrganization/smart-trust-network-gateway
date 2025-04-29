@@ -39,6 +39,7 @@ ThirdParty Licenses
 | com.github.jnr:jnr-ffi:2.0.5 | The Apache Software License, Version 2.0 |
 | com.github.jnr:jnr-x86asm:1.0.2 | MIT License |
 | com.github.multiformats:java-multibase:v1.1.0 | MIT License |
+| com.github.peteroupc:datautilities:1.1.0 | CC0 Universal |
 | com.github.peteroupc:numbers:1.8.2 | CC0-1.0 |
 | com.github.stephenc.jcip:jcip-annotations:1.0-1 | Apache License, Version 2.0 |
 | com.google.code.findbugs:jsr305:3.0.2 | The Apache Software License, Version 2.0 |
@@ -49,6 +50,7 @@ ThirdParty Licenses
 | com.google.j2objc:j2objc-annotations:1.3 | The Apache Software License, Version 2.0 |
 | com.google.protobuf:protobuf-javalite:3.21.12 | BSD-3-Clause |
 | com.google.re2j:re2j:1.6 | Go License |
+| com.googlecode.javaewah:JavaEWAH:1.2.3 | Apache 2 |
 | com.h2database:h2:2.2.220 | EPL 1.0 MPL 2.0 |
 | com.jayway.jsonpath:json-path:2.7.0 | The Apache Software License, Version 2.0 |
 | com.microsoft.azure:msal4j:1.14.0 | MIT License |
@@ -61,14 +63,14 @@ ThirdParty Licenses
 | com.squareup.okhttp3:okhttp:4.10.0 | The Apache Software License, Version 2.0 |
 | com.squareup.okio:okio-jvm:3.0.0 | The Apache Software License, Version 2.0 |
 | com.sun.istack:istack-commons-runtime:4.1.2 | Eclipse Distribution License - v 1.0 |
-| com.upokecenter:cbor:4.5.2 | CC0-1.0 |
+| com.upokecenter:cbor:4.5.4 | CC0-1.0 |
 | com.vaadin.external.google:android-json:0.0.20131108.vaadin1 | Apache License 2.0 |
 | com.zaxxer:HikariCP:5.0.1 | The Apache Software License, Version 2.0 |
 | commons-codec:commons-codec:1.15 | Apache License, Version 2.0 |
 | commons-collections:commons-collections:3.2.2 | Apache License, Version 2.0 |
 | commons-digester:commons-digester:2.1 | The Apache Software License, Version 2.0 |
 | commons-fileupload:commons-fileupload:1.5 | Apache-2.0 |
-| commons-io:commons-io:2.11.0 | Apache License, Version 2.0 |
+| commons-io:commons-io:2.16.1 | Apache-2.0 |
 | commons-logging:commons-logging:1.2 | The Apache Software License, Version 2.0 |
 | commons-validator:commons-validator:1.7 | Apache License, Version 2.0 |
 | decentralized-identity:jsonld-common-java:1.0.0 | Unknown license |
@@ -159,6 +161,7 @@ ThirdParty Licenses
 | org.checkerframework:checker-qual:3.5.0 | The MIT License |
 | org.codehaus.woodstox:stax2-api:4.2.1 | The BSD License |
 | org.eclipse.angus:angus-activation:2.0.1 | EDL 1.0 |
+| org.eclipse.jgit:org.eclipse.jgit:6.9.0.202403050737-r | BSD-3-Clause |
 | org.glassfish:jakarta.json:2.0.0 | Eclipse Public License 2.0 GNU General Public License, version 2 with the GNU Classpath Exception |
 | org.glassfish.jaxb:jaxb-core:4.0.3 | Eclipse Distribution License - v 1.0 |
 | org.glassfish.jaxb:jaxb-runtime:4.0.3 | Eclipse Distribution License - v 1.0 |
@@ -221,6 +224,7 @@ ThirdParty Licenses
 | org.springframework.boot:spring-boot-actuator:3.0.9 | Apache License, Version 2.0 |
 | org.springframework.boot:spring-boot-actuator-autoconfigure:3.0.9 | Apache License, Version 2.0 |
 | org.springframework.boot:spring-boot-autoconfigure:3.0.9 | Apache License, Version 2.0 |
+| org.springframework.boot:spring-boot-configuration-processor:3.0.9 | Apache License, Version 2.0 |
 | org.springframework.boot:spring-boot-starter:3.0.9 | Apache License, Version 2.0 |
 | org.springframework.boot:spring-boot-starter-actuator:3.0.9 | Apache License, Version 2.0 |
 | org.springframework.boot:spring-boot-starter-aop:3.0.9 | Apache License, Version 2.0 |

@@ -28,7 +28,6 @@ import eu.europa.ec.dgc.gateway.restapi.converter.CmsStringMessageConverter;
 import eu.europa.ec.dgc.gateway.restapi.dto.SignedStringDto;
 import eu.europa.ec.dgc.gateway.restapi.dto.revocation.RevocationBatchDeleteRequestDto;
 import eu.europa.ec.dgc.gateway.restapi.dto.revocation.RevocationBatchDto;
-import eu.europa.ec.dgc.gateway.restapi.dto.revocation.RevocationBatchListDto;
 import eu.europa.ec.dgc.gateway.restapi.filter.CertificateAuthenticationFilter;
 import eu.europa.ec.dgc.gateway.restapi.filter.CertificateAuthenticationRequired;
 import eu.europa.ec.dgc.gateway.restapi.filter.CertificateAuthenticationRole;
@@ -45,14 +44,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
-import java.time.ZonedDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -61,7 +57,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -70,7 +65,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @Validated
 @Slf4j
-@ConditionalOnProperty(name = "dgc.revocation.enabled", havingValue = "true")
+@ConditionalOnExpression(
+        "'${dgc.revocation.enabled}' == 'true' and '${dgc.revocation.hidden.endpoints}' == 'true'"
+)
 public class CertificateRevocationListController {
 
     private final RevocationListService revocationListService;
@@ -83,56 +80,6 @@ public class CertificateRevocationListController {
     private static final String MDC_DOWNLOADER_COUNTRY = "downloaderCountry";
     private static final String MDC_DOWNLOADED_COUNTRY = "downloadedCountry";
     private static final String MDC_DOWNLOADED_BATCH_ID = "downloadedBatchId";
-
-    /**
-     * Endpoint to download Revocation Batch List.
-     */
-    @CertificateAuthenticationRequired(requiredRoles = CertificateAuthenticationRole.RevocationListReader)
-    @GetMapping(path = "", produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(
-        security = {
-            @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEMA_HASH),
-            @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEMA_DISTINGUISH_NAME)
-        },
-        tags = {"Revocation"},
-        summary = "Download Batch List",
-        description = "Returning a list of batches with a small wrapper providing metadata."
-            + " The batches are sorted by date in ascending (chronological) order.",
-        parameters = {
-            @Parameter(
-                in = ParameterIn.HEADER,
-                name = HttpHeaders.IF_MODIFIED_SINCE,
-                description = "This header contains the last downloaded date to get just the latest results. "
-                    + "On the initial call the header should be the set to ‘2021-06-01T00:00:00Z’",
-                required = true)
-        },
-        responses = {
-            @ApiResponse(
-                responseCode = "200",
-                description = "Response contains the batch list.",
-                content = @Content(schema = @Schema(implementation = RevocationBatchListDto.class))),
-            @ApiResponse(
-                responseCode = "204",
-                description = "No Content if no data is available later than provided If-Modified-Since header.")
-        }
-    )
-    public ResponseEntity<RevocationBatchListDto> downloadBatchList(
-        @Valid @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-        @RequestHeader(HttpHeaders.IF_MODIFIED_SINCE) ZonedDateTime ifModifiedSince) {
-
-        if (ifModifiedSince.isAfter(ZonedDateTime.now())) {
-            throw new DgcgResponseException(HttpStatus.BAD_REQUEST, "", "IfModifiedSince must be in past", "", "");
-        }
-
-        RevocationBatchListDto revocationBatchListDto =
-            revocationBatchMapper.toDto(revocationListService.getRevocationBatchList(ifModifiedSince));
-
-        if (revocationBatchListDto.getBatches().isEmpty()) {
-            return ResponseEntity.noContent().build();
-        } else {
-            return ResponseEntity.ok(revocationBatchListDto);
-        }
-    }
 
     /**
      * Endpoint to download Revocation Batch.

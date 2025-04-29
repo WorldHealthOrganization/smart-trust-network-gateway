@@ -67,7 +67,9 @@ dgc:
       pem: X-SSL-Client-Cert
   revocation:
     delete-threshold: 14
-    enabled: false
+    enabled: true
+    hidden:
+        endpoints: false
   signer-information:
     delete-threshold: 14
   trustedCertificates:
@@ -84,13 +86,9 @@ dgc:
       - displayURL
     allowedDomains:
       - DCC
-      - DDCC
-      - DIVOC
-      - ICAO
-      - SHC
-      - CRED
-      - RACSEL-DDVC
-      - IPS
+      - IPS-PILGRIMAGE
+      - DICVP
+      - PH4H
   trustlist:
     cron: "* */5 * * * *"
   did:
@@ -98,12 +96,32 @@ dgc:
     contextMapping:
       "[https://www.w3.org/ns/did/v1]": did_v1.json
       "[https://w3id.org/security/suites/jws-2020/v1]": jws-2020_v1.json
+    didUploadProvider: dummy
+    git:
+      workdir: /tmp/tng-cdn-dev
+      prefix: trustlist
+      url: https://github.com/WorldHealthOrganization/tng-cdn-dev
+      pat: <personal-access-token-for-git>
+      owner: <user-with-owner-rights-in-the-target-repo>
+      branch: main
   countryCodeMap:
     virtualCountries:
       XA: XXA
       XB: XXB
+      XC: XXC
+      XD: XXD
+      XE: XXE
+      XF: XXF
+      XG: XXG
+      XH: XXH
+      XI: XXI
+      XJ: XXJ
+      XK: XXK
       XO: XXO
+      XM: XML
       XL: XCL
+      
+      
   cloudmersive:
     apiKey: 0a0a0a0a-0a0a-0a0a-0a0a-0a0a0a0a0a0a
     url: https://api.cloudmersive.com

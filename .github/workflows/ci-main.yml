@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+env:
+  APP_PACKAGES_USERNAME: ${{ github.actor }}
+  APP_PACKAGES_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+  APP_PACKAGES_URL: ghcr.io/worldhealthorganization/ddcc-gateway/ddcc-gateway
 
 jobs:
   build:
@@ -16,7 +20,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.m2/repository
@@ -43,21 +47,18 @@ jobs:
           --settings ./settings.xml
           --define app.packages.username="${APP_PACKAGES_USERNAME}"
           --define app.packages.password="${APP_PACKAGES_PASSWORD}";
-        env:
-          APP_PACKAGES_USERNAME: ${{ github.actor }}
-          APP_PACKAGES_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload ZIP for TST
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: DDCCG001_TST
           path: target/DDCCG001_TST*
       - name: Upload ZIP for ACC
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: DDCCG001_ACC
           path: target/DDCCG001_ACC*
       - name: Upload ZIP for PRD
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: DDCCG001_PRD
           path: target/DDCCG001_PRD*
@@ -98,9 +99,6 @@ jobs:
           --settings ./settings.xml
           --define app.packages.username="${APP_PACKAGES_USERNAME}"
           --define app.packages.password="${APP_PACKAGES_PASSWORD}";
-        env:
-          APP_PACKAGES_USERNAME: ${{ github.actor }}
-          APP_PACKAGES_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
       - name: docker
         run: >-
           echo "${APP_PACKAGES_PASSWORD}" |
@@ -111,18 +109,12 @@ jobs:
           --file ./Dockerfile
           --tag "${APP_PACKAGES_URL}:${APP_VERSION}";
           docker push "${APP_PACKAGES_URL}:${APP_VERSION}";
-        env:
-          APP_PACKAGES_URL: ghcr.io/worldhealthorganization/ddcc-gateway/ddcc-gateway
-          APP_PACKAGES_USERNAME: ${{ github.actor }}
-          APP_PACKAGES_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/delete-package-versions@v4
+      - uses: actions/delete-package-versions@v5
         with:
-          package-name: ${APP_PACKAGES_URL}
-          min-versions-to-keep: 3
-        env:
-          APP_PACKAGES_URL: ghcr.io/worldhealthorganization/ddcc-gateway/ddcc-gateway
-          APP_PACKAGES_USERNAME: ${{ github.actor }}
-          APP_PACKAGES_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          package-name: ddcc-gateway/ddcc-gateway
+          package-type: container
+          min-versions-to-keep: 7
+          ignore-versions: '^[1-9]{1,}\.\d*\.\d*$'
   license:
     runs-on: ubuntu-latest
     steps:
@@ -146,9 +138,6 @@ jobs:
           --settings ./settings.xml
           --define app.packages.username="${APP_PACKAGES_USERNAME}"
           --define app.packages.password="${APP_PACKAGES_PASSWORD}";
-        env:
-          APP_PACKAGES_USERNAME: ${{ github.actor }}
-          APP_PACKAGES_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
       - name: Commit and Push changes
         run: |
           git config user.name github-actions
