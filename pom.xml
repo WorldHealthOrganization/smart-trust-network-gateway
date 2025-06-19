@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.cloud</groupId>
         <artifactId>spring-cloud-starter-parent</artifactId>
-        <version>2024.0.1</version>
+        <version>2025.0.0</version>
         <relativePath/>
     </parent>
 
@@ -191,14 +191,27 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-tomcat</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-tomcat</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-tomcat</artifactId>
+            <version>3.5.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -328,7 +341,7 @@
             <version>6.5.1</version>
             <exclusions>
                 <exclusion>
-                    <groupId>maven:org.springframework.security</groupId>
+                    <groupId>org.springframework.security</groupId>
                     <artifactId>spring-security-crypto</artifactId>
                 </exclusion>
                 <exclusion>
@@ -393,7 +406,7 @@
         <dependency>
             <groupId>org.eclipse.jgit</groupId>
             <artifactId>org.eclipse.jgit</artifactId>
-            <version>6.9.0.202403050737-r</version>
+            <version>7.2.1.202505142326-r</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains</groupId>
@@ -451,7 +464,7 @@
                 <configuration>
                     <dataDirectory>./CVE-files</dataDirectory>
                     <suppressionFile>./owasp/suppressions.xml</suppressionFile>
-                    <failBuildOnCVSS>8</failBuildOnCVSS>
+                    <failBuildOnCVSS>8.0</failBuildOnCVSS>
                     <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
                 </configuration>
             </plugin>
