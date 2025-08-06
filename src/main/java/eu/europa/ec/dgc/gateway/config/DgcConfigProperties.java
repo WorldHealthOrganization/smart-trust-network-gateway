@@ -93,6 +93,7 @@ public class DgcConfigProperties {
     public static class TrustedCertificates {
         private List<String> allowedProperties = new ArrayList<>();
         private List<String> allowedDomains = new ArrayList<>();
+        private String defaultDomain;
     }
 
     @Getter
