@@ -26,6 +26,8 @@
     <suppress>
         <notes>Still WIP</notes>
         <cve>CVE-2022-41862</cve>
+        <cve>CVE-2024-7254</cve>
+        <cve>CVE-2025-22228</cve>
     </suppress>
     <suppress>
         <notes>Snakeyaml, DoS on user supplied input; no external/unknown/dynamic input to parser at runtime</notes>
@@ -49,5 +51,9 @@
         <cve>CVE-2023-36414</cve>
         <cve>CVE-2023-36415</cve>
         <cve>CVE-2023-36052</cve>
+    </suppress>
+    <suppress>
+        <notes>only possibly exhausts resources on tomcat</notes>
+        <cve>CVE-2025-48988</cve>
     </suppress>
 </suppressions>
