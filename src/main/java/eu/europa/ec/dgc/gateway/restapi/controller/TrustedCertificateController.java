@@ -20,6 +20,7 @@
 
 package eu.europa.ec.dgc.gateway.restapi.controller;
 
+import eu.europa.ec.dgc.gateway.config.DgcConfigProperties;
 import eu.europa.ec.dgc.gateway.config.OpenApiConfig;
 import eu.europa.ec.dgc.gateway.exception.DgcgResponseException;
 import eu.europa.ec.dgc.gateway.restapi.converter.CmsCertificateMessageConverter;
@@ -64,6 +65,8 @@ public class TrustedCertificateController {
     private final AuditService auditService;
 
     private final SignerCertificateController signerCertificateController;
+
+    private final DgcConfigProperties dgcConfigProperties;
 
 
     private static final String MDC_VERIFICATION_ERROR_REASON = "verificationFailureReason";
@@ -146,7 +149,8 @@ public class TrustedCertificateController {
         DgcMdc.put("payloadCertSubject", parser.getPayload().getSubject().toString());
 
         try {
-            String domain = body.getDomain() == null ? "DDCC" : body.getDomain();
+            String defaultDomain = dgcConfigProperties.getTrustedCertificates().getDefaultDomain();
+            String domain = body.getDomain() == null ? defaultDomain : body.getDomain();
             signerInformationService.addTrustedCertificate(parser.getPayload(), parser.getSigningCertificate(),
                 body.getCms(), countryCode, body.getKid(), body.getGroup(), domain,
                 body.getProperties());

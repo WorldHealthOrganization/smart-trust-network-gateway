@@ -90,6 +90,8 @@ dgc:
       - IPS-PILGRIMAGE
       - DICVP
       - PH4H
+    defaultDomain:
+      - DCC
   trustlist:
     cron: "0 */5 * * * *"
   did:
