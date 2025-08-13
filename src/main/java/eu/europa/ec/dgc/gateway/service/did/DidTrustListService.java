@@ -23,7 +23,6 @@ package eu.europa.ec.dgc.gateway.service.did;
 import com.apicatalog.jsonld.document.JsonDocument;
 import com.danubetech.keyformats.crypto.ByteSigner;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jose.util.Base64URL;
 import eu.europa.ec.dgc.gateway.config.DgcConfigProperties;
 import eu.europa.ec.dgc.gateway.entity.SignerInformationEntity;
 import eu.europa.ec.dgc.gateway.entity.TrustedIssuerEntity;
@@ -38,6 +37,7 @@ import foundation.identity.jsonld.ConfigurableDocumentLoader;
 import foundation.identity.jsonld.JsonLDObject;
 import info.weboftrust.ldsignatures.jsonld.LDSecurityKeywords;
 import info.weboftrust.ldsignatures.signer.JsonWebSignature2020LdSigner;
+import jakarta.validation.constraints.NotNull;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -58,7 +58,6 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -115,7 +114,7 @@ public class DidTrustListService {
         List<String> countries = trustedPartyService.getCountryList();
 
         for (String country : countries) {
-            String countryTrustList = null;
+            String countryTrustList;
             List<String> countryAsList = List.of(country);
             String countryAsSubcontainer = getCountryAsLowerCaseAlpha3(country);
             if (countryAsSubcontainer != null) {

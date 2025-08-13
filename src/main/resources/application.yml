@@ -26,26 +26,27 @@ management:
       enabled: false
   endpoint:
     info:
-      enabled: true
+      access: unrestricted
     health:
-      enabled: true
       probes:
         enabled: true
+      access: unrestricted
     metrics:
-      enabled: true
+      access: unrestricted
     prometheus:
-      enabled: true
+      access: unrestricted
   endpoints:
-    enabled-by-default: false
     web:
       exposure:
         include: info,health,metrics,prometheus
     jmx:
       exposure:
         include: info,health,metrics,prometheus
-  metrics:
-    export:
-      prometheus:
+    access:
+      default:
+  prometheus:
+    metrics:
+      export:
         enabled: true
 dgc:
   jrc:
@@ -92,7 +93,7 @@ dgc:
     defaultDomain:
       - DCC
   trustlist:
-    cron: "* */5 * * * *"
+    cron: "0 */5 * * * *"
   did:
     enableDidGeneration: false
     contextMapping:
