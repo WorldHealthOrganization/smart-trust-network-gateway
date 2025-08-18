@@ -98,9 +98,9 @@ spec:
         - name: DGC_TRUSTLIST_CRON
           value: "{{ .Values.dgc.trustlist.cron }}"
         - name: DGC_TRUSTEDCERTIFICATES_ALLOWEDDOMAINS
-          value: "{{ .Values.dgc.trustedcertificates.allowedDomains }}"
+          value: "{{ join \",\" .Values.dgc.trustedCertificates.allowedDomains }}"
         - name: DGC_TRUSTEDCERTIFICATES_DEFAULTDOMAIN
-          value: "{{ .Values.dgc.trustedcertificates.defaultDomain }}"
+          value: "{{ join \",\" .Values.dgc.trustedCertificates.defaultDomain }}"
         image: ghcr.io/worldhealthorganization/ddcc-gateway/ddcc-gateway:1.3.0-3b43b3c
         imagePullPolicy: IfNotPresent
         name: ddcc-gateway
