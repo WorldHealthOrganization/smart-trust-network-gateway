@@ -96,7 +96,7 @@ spec:
         - name: DGC_TRUSTANCHOR_CERTIFICATEALIAS
           value: ta
         - name: DGC_TRUSTLIST_CRON
-          value: "{{.dgc.trustlist.cron }}"
+          value: "{{ .Values.dgc.trustlist.cron }}"
         - name: DGC_TRUSTEDCERTIFICATES_ALLOWEDDOMAINS
           value: "{{ join "," .Values.dgc.trustedCertificates.allowedDomains }}"
         - name: DGC_TRUSTEDCERTIFICATES_DEFAULTDOMAIN
