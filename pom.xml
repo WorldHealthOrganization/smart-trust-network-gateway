@@ -47,7 +47,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <!-- dependencies -->
-        <owasp.version>12.1.0</owasp.version>
         <springdoc.version>2.8.5</springdoc.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <bcpkix.version>1.81</bcpkix.version>
@@ -465,7 +464,7 @@
             <plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
-                <version>${owasp.version}</version>
+                <version>12.1.3</version>
                 <configuration>
                     <dataDirectory>./CVE-files</dataDirectory>
                     <suppressionFile>./owasp/suppressions.xml</suppressionFile>
