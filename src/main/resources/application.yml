@@ -109,21 +109,21 @@ dgc:
       branch: main
   countryCodeMap:
     virtualCountries:
-      XA: XXA
-      XB: XXB
-      XC: XXC
-      XD: XXD
-      XE: XXE
-      XF: XXF
-      XG: XXG
-      XH: XXH
-      XI: XXI
-      XJ: XXJ
-      XK: XXK
-      XO: XXO
-      XM: XML
-      XL: XCL
-      YK: XYK
+      #XA: XXA
+      #XB: XXB
+      #XC: XXC
+      #XD: XXD
+      #XE: XXE
+      #XF: XXF
+      #XG: XXG
+      #XH: XXH
+      #XI: XXI
+      #XJ: XXJ
+      #XK: XXK
+      #XO: XXO
+      #XM: XML
+      #XL: XCL
+      #YK: XYK
       
       
   cloudmersive:
