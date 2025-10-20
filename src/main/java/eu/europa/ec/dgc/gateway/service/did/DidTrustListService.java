@@ -137,34 +137,32 @@ public class DidTrustListService {
         log.info("Finished DID Export Process");
     }
 
-private String getCountryAsLowerCaseAlpha3(String country) {
-    if (country == null || (country.length() != 2 && country.length() != 3)) {
-        return null;
-    } else if (country.length() == 3) {
-        return country.toLowerCase();
-    }
-
-    //  Step 1: Check virtual country mappings (XP → XXP, XU → XXU, etc.)
-    Map<String, String> virtualCountries = configProperties.getCountryCodeMap().getVirtualCountries();
-    if (virtualCountries != null && virtualCountries.containsKey(country)) {
-        return virtualCountries.get(country).toLowerCase();
-    }
-
-    try {
-        //  Step 2: Skip ISO lookup for virtual/synthetic prefixes (X*, Y*, Z*)
-        if (country.matches("^[X-Z].*")) {
-            log.warn("Skipping ISO alpha-3 lookup for virtual country: {}", country);
+    private String getCountryAsLowerCaseAlpha3(String country) {
+        if (country == null || (country.length() != 2 && country.length() != 3)) {
+            return null;
+        } else if (country.length() == 3) {
             return country.toLowerCase();
         }
 
-        //  Step 3: Fallback to standard ISO conversion for valid ISO codes
-        return new Locale("en", country).getISO3Country().toLowerCase();
+        Map<String, String> virtualCountries = configProperties.getCountryCodeMap().getVirtualCountries();
+        if (virtualCountries != null && virtualCountries.containsKey(country)) {
+            return virtualCountries.get(country).toLowerCase();
+        }
 
-    } catch (MissingResourceException e) {
-        log.error("Country Code to alpha 3 conversion issue for country {} : {}", country, e.getMessage());
-        return null;
+        try {
+            // Skip ISO lookup for synthetic or prefixed codes (X*, Y*, Z*)
+            if (country.matches("^[X-Z].*")) {
+                log.warn("Skipping ISO alpha-3 lookup for virtual country: {}", country);
+                return country.toLowerCase();
+            }
+
+            return new Locale("en", country).getISO3Country().toLowerCase();
+        } catch (MissingResourceException e) {
+            log.error("Country Code to alpha 3 conversion issue for country {} : {}", country, e.getMessage());
+            return null;
+        }
     }
-}
+
     private String generateTrustList(List<String> countries) throws Exception {
         DidTrustListDto trustList = new DidTrustListDto();
         trustList.setContext(DID_CONTEXTS);
