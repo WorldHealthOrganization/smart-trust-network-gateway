@@ -107,23 +107,23 @@ dgc:
       pat: <personal-access-token-for-git>
       owner: <user-with-owner-rights-in-the-target-repo>
       branch: main
-  countryCodeMap:
-    virtualCountries:
-      XA: XXA
-      XB: XXB
-      XC: XXC
-      XD: XXD
-      XE: XXE
-      XF: XXF
-      XG: XXG
-      XH: XXH
-      XI: XXI
-      XJ: XXJ
-      XK: XXK
-      XO: XXO
-      XM: XML
-      XL: XCL
-      YK: XYK
+  #countryCodeMap:
+    #virtualCountries:
+      #XA: XXA
+      #XB: XXB
+      #XC: XXC
+      #XD: XXD
+      #XE: XXE
+      #XF: XXF
+      #XG: XXG
+      #XH: XXH
+      #XI: XXI
+      #XJ: XXJ
+      #XK: XXK
+      #XO: XXO
+      #XM: XML
+      #XL: XCL
+      #YK: XYK
       
       
   cloudmersive:
