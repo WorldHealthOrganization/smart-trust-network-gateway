@@ -107,8 +107,8 @@ dgc:
       pat: <personal-access-token-for-git>
       owner: <user-with-owner-rights-in-the-target-repo>
       branch: main
-  #countryCodeMap:
-    #virtualCountries:
+  countryCodeMap:
+    virtualCountries:
       #XA: XXA
       #XB: XXB
       #XC: XXC
