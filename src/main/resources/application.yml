@@ -109,7 +109,7 @@ dgc:
       branch: main
   countryCodeMap:
     virtualCountries:
-      #XA: XXA
+      XA: XXA
       #XB: XXB
       #XC: XXC
       #XD: XXD
