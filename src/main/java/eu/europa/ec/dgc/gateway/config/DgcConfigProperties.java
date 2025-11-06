@@ -24,9 +24,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.yaml.snakeyaml.Yaml;
 
 @Getter
 @Setter
@@ -53,6 +58,39 @@ public class DgcConfigProperties {
     private CloudmersiveConfig cloudmersive = new CloudmersiveConfig();
 
     private CountryCodeMap countryCodeMap = new CountryCodeMap();
+
+        @Value("${DGC_COUNTRYCODEMAP_VIRTUALCOUNTRIES:}")
+    private String virtualCountriesRaw;
+
+    @PostConstruct
+    void overrideVirtualCountriesIfEnvPresent() {
+        if (virtualCountriesRaw != null && !virtualCountriesRaw.isBlank()) {
+            Map<String, String> parsed = parseEnvVarToMap(virtualCountriesRaw);
+            if (parsed != null && !parsed.isEmpty()) {
+                this.countryCodeMap.setVirtualCountries(parsed);
+                System.out.println("Loaded virtualCountries from env var: " + parsed);
+            }
+        } else {
+            System.out.println("Using virtualCountries from application.yaml");
+        }
+    }
+
+    private Map<String, String> parseEnvVarToMap(String value) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(value.replace("'", "\""),
+                    new TypeReference<>() {
+                    });
+        } catch (Exception e) {
+            try {
+                Yaml yaml = new Yaml();
+                return yaml.load(value);
+            } catch (Exception ex) {
+                System.err.println("Could not parse DGC_COUNTRYCODEMAP_VIRTUALCOUNTRIES: " + ex.getMessage());
+                return new HashMap<>();
+            }
+        }
+    }
 
     @Getter
     @Setter
