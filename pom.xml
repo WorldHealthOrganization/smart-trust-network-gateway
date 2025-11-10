@@ -154,13 +154,6 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-bom</artifactId>
-                <version>4.2.6.Final</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -412,7 +405,7 @@
         <dependency>
             <groupId>org.eclipse.jgit</groupId>
             <artifactId>org.eclipse.jgit</artifactId>
-            <version>7.4.0.202509020913-r</version>
+            <version>7.2.1.202505142326-r</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains</groupId>
@@ -423,7 +416,7 @@
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-core</artifactId>
-            <version>11.0.12</version>
+            <version>11.0.11</version>
         </dependency>
     </dependencies>
 

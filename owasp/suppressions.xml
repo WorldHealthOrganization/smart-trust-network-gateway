@@ -59,6 +59,5 @@
     <suppress>
         <notes>only possibly exhausts resources on tomcat</notes>
         <cve>CVE-2025-48988</cve>
-        <cve>CVE-2025-49124</cve>
     </suppress>
 </suppressions>
