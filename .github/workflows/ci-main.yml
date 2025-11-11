@@ -13,14 +13,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165	# v5.0.0
         with:
           java-version: 17
           distribution: adopt
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8	# v5.0.0
         with:
           fetch-depth: 0
-      - uses: actions/cache@v4
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830	# v4.3.0
         with:
           path: |
             ~/.m2/repository
@@ -48,31 +48,31 @@ jobs:
           --define app.packages.username="${APP_PACKAGES_USERNAME}"
           --define app.packages.password="${APP_PACKAGES_PASSWORD}";
       - name: Upload ZIP for TST
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53	# v6.0.0
         with:
           name: DDCCG001_TST
           path: target/DDCCG001_TST*
       - name: Upload ZIP for ACC
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4	# v5.0.0
         with:
           name: DDCCG001_ACC
           path: target/DDCCG001_ACC*
       - name: Upload ZIP for PRD
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4	# v5.0.0
         with:
           name: DDCCG001_PRD
           path: target/DDCCG001_PRD*
   build-docker:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165	# v5.0.0
         with:
           java-version: 17
           distribution: adopt
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8	# v5.0.0
         with:
           fetch-depth: 0
-      - uses: actions/cache@v4
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830	# v4.3.0
         with:
           path: |
             ~/.m2/repository
@@ -109,7 +109,7 @@ jobs:
           --file ./Dockerfile
           --tag "${APP_PACKAGES_URL}:${APP_VERSION}";
           docker push "${APP_PACKAGES_URL}:${APP_VERSION}";
-      - uses: actions/delete-package-versions@v5
+      - uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55	# v5.0.0
         with:
           package-name: ddcc-gateway/ddcc-gateway
           package-type: container
@@ -118,14 +118,14 @@ jobs:
   license:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165	# v5.0.0
         with:
           java-version: 17
           distribution: adopt
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8	# v5.0.0
         with:
           token: ${{ secrets.GPR_TOKEN_F11H }}
-      - uses: actions/cache@v4
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830	# v4.3.0
         with:
           path: |
             ~/.m2/repository
