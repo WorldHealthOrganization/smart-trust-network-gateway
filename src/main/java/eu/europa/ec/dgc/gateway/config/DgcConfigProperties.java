@@ -20,13 +20,13 @@
 
 package eu.europa.ec.dgc.gateway.config;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Value;
@@ -59,7 +59,7 @@ public class DgcConfigProperties {
 
     private CountryCodeMap countryCodeMap = new CountryCodeMap();
 
-        @Value("${DGC_COUNTRYCODEMAP_VIRTUALCOUNTRIES:}")
+    @Value("${DGC_COUNTRYCODEMAP_VIRTUALCOUNTRIES:}")
     private String virtualCountriesRaw;
 
     @PostConstruct
