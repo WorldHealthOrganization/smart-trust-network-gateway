@@ -59,38 +59,38 @@ public class DgcConfigProperties {
 
     private CountryCodeMap countryCodeMap = new CountryCodeMap();
 
-    @Value("${DGC_COUNTRYCODEMAP_VIRTUALCOUNTRIES:}")
-    private String virtualCountriesRaw;
-
-    @PostConstruct
-    void overrideVirtualCountriesIfEnvPresent() {
-        if (virtualCountriesRaw != null && !virtualCountriesRaw.isBlank()) {
-            Map<String, String> parsed = parseEnvVarToMap(virtualCountriesRaw);
-            if (parsed != null && !parsed.isEmpty()) {
-                this.countryCodeMap.setVirtualCountries(parsed);
-                System.out.println("Loaded virtualCountries from env var: " + parsed);
-            }
-        } else {
-            System.out.println("Using virtualCountries from application.yaml");
-        }
-    }
-
-    private Map<String, String> parseEnvVarToMap(String value) {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            return mapper.readValue(value.replace("'", "\""),
-                    new TypeReference<>() {
-                    });
-        } catch (Exception e) {
-            try {
-                Yaml yaml = new Yaml();
-                return yaml.load(value);
-            } catch (Exception ex) {
-                System.err.println("Could not parse DGC_COUNTRYCODEMAP_VIRTUALCOUNTRIES: " + ex.getMessage());
-                return new HashMap<>();
-            }
-        }
-    }
+//    @Value("${DGC_COUNTRYCODEMAP_VIRTUALCOUNTRIES:}")
+//    private String virtualCountriesRaw;
+//
+//    @PostConstruct
+//    void overrideVirtualCountriesIfEnvPresent() {
+//        if (virtualCountriesRaw != null && !virtualCountriesRaw.isBlank()) {
+//            Map<String, String> parsed = parseEnvVarToMap(virtualCountriesRaw);
+//            if (parsed != null && !parsed.isEmpty()) {
+//                this.countryCodeMap.setVirtualCountries(parsed);
+//                System.out.println("Loaded virtualCountries from env var: " + parsed);
+//            }
+//        } else {
+//            System.out.println("Using virtualCountries from application.yaml");
+//        }
+//    }
+//
+//    private Map<String, String> parseEnvVarToMap(String value) {
+//        try {
+//            ObjectMapper mapper = new ObjectMapper();
+//            return mapper.readValue(value.replace("'", "\""),
+//                    new TypeReference<>() {
+//                    });
+//        } catch (Exception e) {
+//            try {
+//                Yaml yaml = new Yaml();
+//                return yaml.load(value);
+//            } catch (Exception ex) {
+//                System.err.println("Could not parse DGC_COUNTRYCODEMAP_VIRTUALCOUNTRIES: " + ex.getMessage());
+//                return new HashMap<>();
+//            }
+//        }
+//    }
 
     @Getter
     @Setter
