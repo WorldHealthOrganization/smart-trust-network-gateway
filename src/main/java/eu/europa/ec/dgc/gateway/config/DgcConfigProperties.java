@@ -39,9 +39,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties("dgc")
 public class DgcConfigProperties {
 
-    @Value("${DGC_COUNTRYCODEMAP_VIRTUALCOUNTRIES:}")
-    private String virtualCountriesJson;
-
     private final CertAuth certAuth = new CertAuth();
     private final KeyStoreWithAlias trustAnchor = new KeyStoreWithAlias();
 
@@ -62,15 +59,6 @@ public class DgcConfigProperties {
     private CloudmersiveConfig cloudmersive = new CloudmersiveConfig();
 
     private CountryCodeMap countryCodeMap = new CountryCodeMap();
-
-    @PostConstruct
-    void init() throws JsonProcessingException {
-        if (virtualCountriesJson != null && !virtualCountriesJson.isBlank()) {
-            ObjectMapper mapper = new ObjectMapper();
-            Map<String, String> map = mapper.readValue(virtualCountriesJson, new TypeReference<>() {});
-            this.countryCodeMap.setVirtualCountries(map);
-        }
-    }
 
     @Getter
     @Setter
