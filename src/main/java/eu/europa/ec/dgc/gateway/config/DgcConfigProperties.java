@@ -20,23 +20,27 @@
 
 package eu.europa.ec.dgc.gateway.config;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.yaml.snakeyaml.Yaml;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter
 @ConfigurationProperties("dgc")
 public class DgcConfigProperties {
+
+    @Value("${DGC_COUNTRYCODEMAP_VIRTUALCOUNTRIES:}")
+    private String virtualCountriesJson;
 
     private final CertAuth certAuth = new CertAuth();
     private final KeyStoreWithAlias trustAnchor = new KeyStoreWithAlias();
@@ -58,6 +62,15 @@ public class DgcConfigProperties {
     private CloudmersiveConfig cloudmersive = new CloudmersiveConfig();
 
     private CountryCodeMap countryCodeMap = new CountryCodeMap();
+
+    @PostConstruct
+    void init() throws JsonProcessingException {
+        if (virtualCountriesJson != null && !virtualCountriesJson.isBlank()) {
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, String> map = mapper.readValue(virtualCountriesJson, new TypeReference<>() {});
+            this.countryCodeMap.setVirtualCountries(map);
+        }
+    }
 
     @Getter
     @Setter
