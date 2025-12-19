@@ -198,4 +198,29 @@ public class DgcConfigProperties {
         private String owner;
         private String branch;
     }
+//    @Getter
+//    @Setter
+//    public static class CountryCodeMap {
+//        private Map<String, String> virtualCountries = new HashMap<>();
+//
+//        @Value("${DGC_COUNTRYCODEMAP_VIRTUALCOUNTRIES:}")
+//        private String virtualCountriesJson;
+//
+//        @PostConstruct
+//        public void initVirtualCountries() {
+//            if (virtualCountriesJson != null && !virtualCountriesJson.isEmpty()) {
+//                try {
+//                    ObjectMapper objectMapper = new ObjectMapper();
+//                    Map<String, String> parsedMap = objectMapper.readValue(
+//                            virtualCountriesJson,
+//                            new TypeReference<Map<String, String>>() {}
+//                    );
+//                    this.virtualCountries.putAll(parsedMap);
+//                } catch (JsonProcessingException e) {
+//                    // Log error handling
+//                    throw new IllegalArgumentException("Failed to parse virtual countries JSON", e);
+//                }
+//            }
+//        }
+//    }
 }
