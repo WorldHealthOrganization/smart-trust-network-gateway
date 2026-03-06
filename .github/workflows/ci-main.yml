@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+
+permissions:
+  contents: write
+
 env:
   APP_PACKAGES_USERNAME: ${{ github.actor }}
   APP_PACKAGES_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
