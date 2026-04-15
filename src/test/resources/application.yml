@@ -56,6 +56,7 @@ dgc:
     contextMapping:
       "[https://www.w3.org/ns/did/v1]": did_v1.json
       "[https://w3id.org/security/suites/jws-2020/v1]": jws-2020_v1.json
+      "[https://worldhealthorganization.github.io/smart-trust/tng-additional-context/v2]": tng-additional-context-dev_v2.json
   cloudmersive:
     apiKey: 0a0a0a0a-0a0a-0a0a-0a0a-0a0a0a0a0a0a
     enabled: true

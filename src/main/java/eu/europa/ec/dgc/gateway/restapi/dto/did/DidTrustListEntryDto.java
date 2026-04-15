@@ -26,6 +26,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+*import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -42,6 +43,13 @@ public class DidTrustListEntryDto {
     private String controller;
 
     private PublicKeyJwk publicKeyJwk;
+
+    private CodedValue domain;
+
+    private CodedValue participant;
+
+    private CodedValue keyusage;
+
 
     @NoArgsConstructor
     @Setter
@@ -116,6 +124,13 @@ public class DidTrustListEntryDto {
             valueN = Base64.getUrlEncoder().encodeToString(rsaPublicKey.getModulus().toByteArray());
             valueE = Base64.getUrlEncoder().encodeToString(rsaPublicKey.getPublicExponent().toByteArray());
         }
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CodedValue {
+        private String code;
     }
 
 }

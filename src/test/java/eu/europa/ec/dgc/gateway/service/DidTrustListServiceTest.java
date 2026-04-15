@@ -143,6 +143,10 @@ public class DidTrustListServiceTest {
         certAuthEu = trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.AUTHENTICATION, "EU", signerType);
 
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(signerType.getSigningAlgorithm());
+        if (signerType == CertificateTestUtils.SignerType.EC) {
+            keyPairGenerator.initialize(new java.security.spec.ECGenParameterSpec("secp256r1"));
+        }
+
         certDscDe =
             CertificateTestUtils.generateCertificate(keyPairGenerator.generateKeyPair(), "DE",
                     "Test", certCscaDe,
@@ -231,7 +235,7 @@ public class DidTrustListServiceTest {
         Assertions.assertTrue(parsed.getVerificationMethod().contains("did:trusted:DE:issuer"));
         Assertions.assertTrue(parsed.getVerificationMethod().contains("did:trusted:EU:issuer"));
         Assertions.assertTrue(parsed.getVerificationMethod().contains("did:trusted:XY:issuer"));
-        Assertions.assertEquals(2, parsed.getContext().size());
+        Assertions.assertEquals(3, parsed.getContext().size());
         Assertions.assertEquals("JsonWebSignature2020", parsed.getProof().getType());
         Assertions.assertTrue(
             Instant.now().toEpochMilli() - parsed.getProof().getCreated().toInstant().toEpochMilli() < 10000);

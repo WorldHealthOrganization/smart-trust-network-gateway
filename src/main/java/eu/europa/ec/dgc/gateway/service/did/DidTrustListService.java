@@ -74,7 +74,8 @@ public class DidTrustListService {
 
     private static final List<String> DID_CONTEXTS = List.of(
             "https://www.w3.org/ns/did/v1",
-            "https://w3id.org/security/suites/jws-2020/v1");
+            "https://w3id.org/security/suites/jws-2020/v1",
+            "https://worldhealthorganization.github.io/smart-trust/tng-additional-context/v2");
 
     private final TrustedIssuerService trustedIssuerService;
 
@@ -273,8 +274,16 @@ public class DidTrustListService {
         trustListEntry.setController(configProperties.getDid().getTrustListControllerPrefix()
                 + SEPARATOR_COLON + getCountryAsLowerCaseAlpha3(cert.getCountry()));
         trustListEntry.setPublicKeyJwk(publicKeyJwk);
-
+        setAdditionalAttributeInVerificationMethod(cert, trustListEntry);
         trustList.getVerificationMethod().add(trustListEntry);
+    }
+
+    private void setAdditionalAttributeInVerificationMethod(TrustedCertificateTrustList cert,
+                                                            DidTrustListEntryDto trustListEntry) {
+        trustListEntry.setDomain(new DidTrustListEntryDto.CodedValue(cert.getDomain()));
+        trustListEntry.setParticipant(new DidTrustListEntryDto
+                .CodedValue(getCountryAsLowerCaseAlpha3(cert.getCountry())));
+        trustListEntry.setKeyusage(new DidTrustListEntryDto.CodedValue(cert.getGroup()));
     }
 
     @NotNull
