@@ -23,6 +23,7 @@ package eu.europa.ec.dgc.gateway;
 import eu.europa.ec.dgc.gateway.config.DgcConfigProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.cloud.openfeign.EnableFeignClients;
@@ -30,7 +31,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 /**
  * The Application class.
  */
-@SpringBootApplication
+@SpringBootApplication(exclude = {UserDetailsServiceAutoConfiguration.class})
 @EnableFeignClients
 @EnableConfigurationProperties(DgcConfigProperties.class)
 public class DgcGatewayApplication extends SpringBootServletInitializer {
