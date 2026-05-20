@@ -15,7 +15,7 @@ ThirdParty Licenses
 | ch.qos.logback:logback-core:1.5.18 | Eclipse Public License - v 1.0 GNU Lesser General Public License |
 | com.apicatalog:titanium-json-ld:1.1.0 | Apache License, Version 2.0 |
 | com.azure:azure-core:1.45.0 | The MIT License (MIT) |
-| com.azure:azure-core-http-netty:1.16.3 | The MIT License (MIT) |
+| com.azure:azure-core-http-netty:1.13.10 | The MIT License (MIT) |
 | com.azure:azure-identity:1.12.2 | The MIT License (MIT) |
 | com.azure:azure-json:1.1.0 | The MIT License (MIT) |
 | com.azure:azure-security-keyvault-keys:4.7.1 | The MIT License (MIT) |
