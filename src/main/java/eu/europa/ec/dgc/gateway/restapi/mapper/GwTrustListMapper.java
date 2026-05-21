@@ -81,7 +81,7 @@ public abstract class GwTrustListMapper {
             return null;
         }
         try {
-            System.out.println("=====Mapping JSON to Map=====. Value: " + json);
+            log.info("=====Mapping JSON to Map=====. Value: {}", json);
             return objectMapper.readValue(json, new TypeReference<Map<String, String>>() {
             });
         } catch (Exception e) {
