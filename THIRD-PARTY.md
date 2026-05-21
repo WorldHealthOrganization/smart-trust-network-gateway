@@ -15,7 +15,7 @@ ThirdParty Licenses
 | ch.qos.logback:logback-core:1.5.18 | Eclipse Public License - v 1.0 GNU Lesser General Public License |
 | com.apicatalog:titanium-json-ld:1.1.0 | Apache License, Version 2.0 |
 | com.azure:azure-core:1.45.0 | The MIT License (MIT) |
-| com.azure:azure-core-http-netty:1.13.10 | The MIT License (MIT) |
+| com.azure:azure-core-http-netty:1.16.3 | The MIT License (MIT) |
 | com.azure:azure-identity:1.12.2 | The MIT License (MIT) |
 | com.azure:azure-json:1.1.0 | The MIT License (MIT) |
 | com.azure:azure-security-keyvault-keys:4.7.1 | The MIT License (MIT) |
@@ -161,8 +161,8 @@ ThirdParty Licenses
 | org.awaitility:awaitility:4.3.0 | Apache 2.0 |
 | org.bitcoinj:bitcoinj-core:0.17 | The Apache Software License, Version 2.0 |
 | org.bouncycastle:bcpkix-jdk18on:1.81 | Bouncy Castle Licence |
-| org.bouncycastle:bcprov-jdk18on:1.80 | Bouncy Castle Licence |
-| org.bouncycastle:bcutil-jdk18on:1.81.1 | Bouncy Castle Licence |
+| org.bouncycastle:bcprov-jdk18on:1.81 | Bouncy Castle Licence |
+| org.bouncycastle:bcutil-jdk18on:1.81 | Bouncy Castle Licence |
 | org.checkerframework:checker-qual:3.43.0 | The MIT License |
 | org.codehaus.woodstox:stax2-api:4.2.2 | The BSD 2-Clause License |
 | org.eclipse.angus:angus-activation:2.0.2 | EDL 1.0 |
