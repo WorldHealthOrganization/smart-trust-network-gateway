@@ -161,8 +161,8 @@ ThirdParty Licenses
 | org.awaitility:awaitility:4.3.0 | Apache 2.0 |
 | org.bitcoinj:bitcoinj-core:0.17 | The Apache Software License, Version 2.0 |
 | org.bouncycastle:bcpkix-jdk18on:1.81 | Bouncy Castle Licence |
-| org.bouncycastle:bcprov-jdk18on:1.81 | Bouncy Castle Licence |
-| org.bouncycastle:bcutil-jdk18on:1.81 | Bouncy Castle Licence |
+| org.bouncycastle:bcprov-jdk18on:1.80 | Bouncy Castle Licence |
+| org.bouncycastle:bcutil-jdk18on:1.81.1 | Bouncy Castle Licence |
 | org.checkerframework:checker-qual:3.43.0 | The MIT License |
 | org.codehaus.woodstox:stax2-api:4.2.2 | The BSD 2-Clause License |
 | org.eclipse.angus:angus-activation:2.0.2 | EDL 1.0 |
