@@ -14,26 +14,25 @@ ThirdParty Licenses
 | ch.qos.logback:logback-classic:1.5.18 | Eclipse Public License - v 1.0 GNU Lesser General Public License |
 | ch.qos.logback:logback-core:1.5.18 | Eclipse Public License - v 1.0 GNU Lesser General Public License |
 | com.apicatalog:titanium-json-ld:1.1.0 | Apache License, Version 2.0 |
-| com.azure:azure-core:1.45.0 | The MIT License (MIT) |
-| com.azure:azure-core-http-netty:1.16.3 | The MIT License (MIT) |
-| com.azure:azure-identity:1.12.2 | The MIT License (MIT) |
-| com.azure:azure-json:1.1.0 | The MIT License (MIT) |
-| com.azure:azure-security-keyvault-keys:4.7.1 | The MIT License (MIT) |
-| com.azure:azure-storage-blob:12.24.1 | The MIT License (MIT) |
-| com.azure:azure-storage-common:12.23.1 | The MIT License (MIT) |
-| com.azure:azure-storage-internal-avro:12.9.1 | The MIT License (MIT) |
+| com.azure:azure-core:1.58.0 | The MIT License (MIT) |
+| com.azure:azure-core-http-netty:1.16.4 | The MIT License (MIT) |
+| com.azure:azure-identity:1.18.3 | The MIT License (MIT) |
+| com.azure:azure-json:1.5.1 | The MIT License (MIT) |
+| com.azure:azure-security-keyvault-keys:4.10.7 | The MIT License (MIT) |
+| com.azure:azure-storage-blob:12.34.0 | The MIT License (MIT) |
+| com.azure:azure-storage-common:12.33.0 | The MIT License (MIT) |
+| com.azure:azure-storage-internal-avro:12.19.0 | The MIT License (MIT) |
+| com.azure:azure-xml:1.2.1 | The MIT License (MIT) |
 | com.damnhandy:handy-uri-templates:2.1.8 | The Apache Software License, Version 2.0 |
 | com.danubetech:key-formats-java:1.2.0 | Unknown license |
 | com.fasterxml:classmate:1.7.0 | Apache License, Version 2.0 |
 | com.fasterxml.jackson.core:jackson-annotations:2.19.0 | The Apache Software License, Version 2.0 |
 | com.fasterxml.jackson.core:jackson-core:2.19.0 | The Apache Software License, Version 2.0 |
 | com.fasterxml.jackson.core:jackson-databind:2.19.0 | The Apache Software License, Version 2.0 |
-| com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.19.0 | The Apache Software License, Version 2.0 |
 | com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.19.0 | The Apache Software License, Version 2.0 |
 | com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.19.0 | The Apache Software License, Version 2.0 |
 | com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.0 | The Apache Software License, Version 2.0 |
 | com.fasterxml.jackson.module:jackson-module-parameter-names:2.19.0 | The Apache Software License, Version 2.0 |
-| com.fasterxml.woodstox:woodstox-core:7.1.0 | The Apache License, Version 2.0 |
 | com.github.everit-org.json-schema:org.everit.json.schema:1.14.3 | Apache License, Version 2.0 |
 | com.github.jnr:jffi:1.2.9 | The Apache Software License, Version 2.0 |
 | com.github.jnr:jnr-ffi:2.0.5 | The Apache Software License, Version 2.0 |
@@ -53,12 +52,9 @@ ThirdParty Licenses
 | com.googlecode.javaewah:JavaEWAH:1.2.3 | Apache 2 |
 | com.h2database:h2:2.2.220 | EPL 1.0 MPL 2.0 |
 | com.jayway.jsonpath:json-path:2.9.0 | The Apache Software License, Version 2.0 |
-| com.microsoft.azure:msal4j:1.15.1 | MIT License |
+| com.microsoft.azure:msal4j:1.23.1 | MIT License |
 | com.microsoft.azure:msal4j-persistence-extension:1.3.0 | MIT License |
-| com.nimbusds:content-type:2.3 | The Apache Software License, Version 2.0 |
-| com.nimbusds:lang-tag:1.7 | The Apache Software License, Version 2.0 |
 | com.nimbusds:nimbus-jose-jwt:9.9 | The Apache Software License, Version 2.0 |
-| com.nimbusds:oauth2-oidc-sdk:11.9.1 | Apache License, version 2.0 |
 | com.opencsv:opencsv:5.9 | Apache 2 |
 | com.sun.istack:istack-commons-runtime:4.1.2 | Eclipse Distribution License - v 1.0 |
 | com.upokecenter:cbor:4.5.4 | CC0-1.0 |
@@ -135,7 +131,7 @@ ThirdParty Licenses
 | net.bytebuddy:byte-buddy:1.17.5 | Apache License, Version 2.0 |
 | net.bytebuddy:byte-buddy-agent:1.17.5 | Apache License, Version 2.0 |
 | net.java.dev.jna:jna:5.13.0 | Apache-2.0 LGPL-2.1-or-later |
-| net.java.dev.jna:jna-platform:5.6.0 | Apache License v2.0 LGPL, version 2.1 |
+| net.java.dev.jna:jna-platform:5.17.0 | Apache-2.0 LGPL-2.1-or-later |
 | net.javacrumbs.shedlock:shedlock-core:5.2.0 | The Apache Software License, Version 2.0 |
 | net.javacrumbs.shedlock:shedlock-provider-jdbc-template:5.2.0 | The Apache Software License, Version 2.0 |
 | net.javacrumbs.shedlock:shedlock-spring:5.2.0 | The Apache Software License, Version 2.0 |
@@ -164,7 +160,6 @@ ThirdParty Licenses
 | org.bouncycastle:bcprov-jdk18on:1.80 | Bouncy Castle Licence |
 | org.bouncycastle:bcutil-jdk18on:1.81.1 | Bouncy Castle Licence |
 | org.checkerframework:checker-qual:3.43.0 | The MIT License |
-| org.codehaus.woodstox:stax2-api:4.2.2 | The BSD 2-Clause License |
 | org.eclipse.angus:angus-activation:2.0.2 | EDL 1.0 |
 | org.eclipse.jgit:org.eclipse.jgit:7.4.0.202509020913-r | BSD-3-Clause |
 | org.glassfish:jakarta.json:2.0.0 | Eclipse Public License 2.0 GNU General Public License, version 2 with the GNU Classpath Exception |
