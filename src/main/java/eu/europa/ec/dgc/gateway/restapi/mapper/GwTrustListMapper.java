@@ -77,11 +77,16 @@ public abstract class GwTrustListMapper {
      * Map JSON String to properties Map.
      */
     public Map<String, String> mapMap(String json, @Context ObjectMapper objectMapper) {
+        if (json == null || json.isBlank()) {
+            return null;
+        }
         try {
+            log.info("=====Mapping JSON to Map=====. Value: {}", json);
             return objectMapper.readValue(json, new TypeReference<Map<String, String>>() {
             });
         } catch (Exception e) {
-            log.error("Failed To Map TrustedCertificate Entity to DTO.");
+            log.error("Failed to map TrustedCertificate properties JSON to Map. Value: [{}]. Reason: {}",
+                    json, e.getMessage());
             return null;
         }
     }
