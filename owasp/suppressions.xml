@@ -50,6 +50,8 @@
         <cve>CVE-2023-1370</cve>
         <cve>CVE-2023-24998</cve>
         <cve>CVE-2025-55754</cve>
+        <cve>CVE-2026-53914</cve>
+        <cve>CVE-2026-0994</cve>
     </suppress>
     <suppress>
         <notes>No Fix available</notes>

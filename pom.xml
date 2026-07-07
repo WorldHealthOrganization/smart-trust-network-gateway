@@ -351,14 +351,14 @@
             <version>${shedlock.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-core</artifactId>
+            <version>${azure-core.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib</artifactId>
             <version>${kotlin.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.azure</groupId>
-            <artifactId>azure-security-keyvault-keys</artifactId>
-            <version>${azure-security-keyvault-keys.version}</version>
         </dependency>
         <dependency>
             <groupId>com.azure</groupId>
@@ -376,8 +376,8 @@
         </dependency>
         <dependency>
             <groupId>com.azure</groupId>
-            <artifactId>azure-core</artifactId>
-            <version>${azure-core.version}</version>
+            <artifactId>azure-security-keyvault-keys</artifactId>
+            <version>${azure-security-keyvault-keys.version}</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jgit</groupId>
