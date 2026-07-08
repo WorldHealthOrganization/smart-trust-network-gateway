@@ -1,27 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-
     <modelVersion>4.0.0</modelVersion>
-
     <parent>
-        <groupId>org.springframework.cloud</groupId>
-        <artifactId>spring-cloud-starter-parent</artifactId>
-        <version>2025.0.0</version>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.5.16</version>
         <relativePath/>
     </parent>
-
     <groupId>eu.europa.ec.dgc</groupId>
     <artifactId>ddcc-gateway</artifactId>
     <version>latest</version>
     <packaging>${packaging.format}</packaging>
-
     <name>ddcc-gateway</name>
     <description>Digital Documentation Covid Certificate Gateway project.</description>
     <organization>
         <name>T-Systems International GmbH</name>
     </organization>
-
     <repositories>
         <repository>
             <id>who-github</id>
@@ -36,44 +31,58 @@
             <url>https://repo.danubetech.com/repository/maven-public/</url>
         </repository>
     </repositories>
-
     <properties>
         <packaging.format>war</packaging.format>
-        <!-- java -->
+        <!--  java  -->
         <java.version>17</java.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <!-- charset -->
+        <!--  charset  -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <!-- dependencies -->
-        <springdoc.version>2.8.5</springdoc.version>
+        <!--  managed platform versions  -->
+        <spring-cloud.version>2025.0.3</spring-cloud.version>
+        <azure-sdk-bom.version>1.3.7</azure-sdk-bom.version>
+        <netty.version>4.2.15.Final</netty.version>
+        <kotlin.version>2.4.0</kotlin.version>
+        <azure-security-keyvault-keys.version>4.11.1</azure-security-keyvault-keys.version>
+        <azure-core.version>1.58.1</azure-core.version>
+        <azure-core-http-netty.version>1.16.5</azure-core-http-netty.version>
+        <azure-identity.version>1.18.4</azure-identity.version>
+        <protobuf.version>4.35.1</protobuf.version>
+        <!--  security override versions  -->
+        <springdoc.version>2.8.17</springdoc.version>
+        <jackson-bom.version>2.22.0</jackson-bom.version>
+        <tomcat.version>10.1.56</tomcat.version>
+        <log4j2.version>2.26.1</log4j2.version>
+        <commons-lang3.version>3.20.0</commons-lang3.version>
+        <nimbus-jose-jwt.version>10.9.1</nimbus-jose-jwt.version>
+        <!--  dependencies  -->
+        <owasp.version>12.1.6</owasp.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
-        <bcpkix.version>1.81</bcpkix.version>
+        <bcpkix.version>1.76</bcpkix.version>
         <semver4j.version>4.3.0</semver4j.version>
         <json-schema.version>1.14.3</json-schema.version>
         <shedlock.version>5.2.0</shedlock.version>
         <h2.version>2.2.220</h2.version>
-        <!-- plugins -->
+        <!--  plugins  -->
         <plugin.maven-assembly.version>3.4.2</plugin.maven-assembly.version>
         <plugin.checkstyle.version>3.2.1</plugin.checkstyle.version>
         <plugin.sonar.version>3.9.1.2184</plugin.sonar.version>
         <plugin.jacoco.version>0.8.8</plugin.jacoco.version>
         <plugin.os-maven.version>1.7.1</plugin.os-maven.version>
-        <!-- license -->
-        <license.projectName>WHO Digital Documentation Covid Certificate Gateway Service / ddcc-gateway
-        </license.projectName>
+        <!--  license  -->
+        <license.projectName>WHO Digital Documentation Covid Certificate Gateway Service / ddcc-gateway</license.projectName>
         <license.inceptionYear>2022</license.inceptionYear>
         <license.licenseName>apache_v2</license.licenseName>
-        <!-- github -->
+        <!--  github  -->
         <github.organization>WorldHealthOrganization</github.organization>
         <github.project>ddcc-gateway</github.project>
-        <!-- sonar -->
+        <!--  sonar  -->
         <sonar.organization>WorldHealthOrganization</sonar.organization>
         <sonar.projectKey>${sonar.organization}_${project.artifactId}</sonar.projectKey>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
-
     <url>https://github.com/WorldHealthOrganization/ddcc-gateway</url>
     <ciManagement>
         <url>https://github.com/WorldHealthOrganization/ddcc-gateway/actions?query=workflow%3Aci</url>
@@ -84,7 +93,6 @@
     <scm>
         <url>https://github.com/WorldHealthOrganization/ddcc-gateway</url>
     </scm>
-
     <profiles>
         <profile>
             <id>docker</id>
@@ -123,38 +131,66 @@
             </build>
         </profile>
     </profiles>
-
     <distributionManagement>
         <repository>
             <id>who-github</id>
             <url>https://maven.pkg.github.com/${github.organization}/${github.project}</url>
         </repository>
     </distributionManagement>
-
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
                 <groupId>com.azure</groupId>
                 <artifactId>azure-sdk-bom</artifactId>
-                <version>1.3.7</version>
+                <version>${azure-sdk-bom.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
-                <version>4.2.6.Final</version>
+                <version>${netty.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-bom</artifactId>
+                <version>${protobuf.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson-bom.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${commons-lang3.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nimbusds</groupId>
+                <artifactId>nimbus-jose-jwt</artifactId>
+                <version>${nimbus-jose-jwt.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
-
     <dependencies>
         <dependency>
             <groupId>eu.europa.ec.dgc</groupId>
             <artifactId>ddcc-gateway-lib</artifactId>
-            <version>2.2.1</version>
+            <version>2.0.1</version>
         </dependency>
         <dependency>
             <groupId>org.semver4j</groupId>
@@ -165,17 +201,10 @@
             <groupId>com.github.everit-org.json-schema</groupId>
             <artifactId>org.everit.json.schema</artifactId>
             <version>${json-schema.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.7.11</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
@@ -189,27 +218,14 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-tomcat</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-tomcat</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-tomcat</artifactId>
-            <version>3.5.4</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -217,45 +233,24 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
         <dependency>
-         <groupId>io.micrometer</groupId>
-         <artifactId>micrometer-registry-prometheus</artifactId>
-             <scope>runtime</scope>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-openfeign</artifactId>
-            <version>4.3.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>commons-fileupload</groupId>
                     <artifactId>commons-fileupload</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.springframework.security</groupId>
-                    <artifactId>spring-security-crypto</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
         <dependency>
             <groupId>commons-fileupload</groupId>
             <artifactId>commons-fileupload</artifactId>
-            <version>1.6.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-crypto</artifactId>
-            <version>6.5.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-core</artifactId>
-            <version>6.5.1</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework.security</groupId>
-                    <artifactId>spring-security-crypto</artifactId>
-                </exclusion>
-            </exclusions>
+            <version>1.5</version>
         </dependency>
         <dependency>
             <groupId>io.github.openfeign</groupId>
@@ -275,7 +270,7 @@
         <dependency>
             <groupId>org.bitcoinj</groupId>
             <artifactId>bitcoinj-core</artifactId>
-            <version>0.17</version>
+            <version>0.16.2</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.google.protobuf</groupId>
@@ -290,9 +285,8 @@
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-javalite</artifactId>
-            <version>4.28.2</version>
+            <version>${protobuf.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -336,37 +330,15 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-web</artifactId>
-            <version>6.5.1</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework.security</groupId>
-                    <artifactId>spring-security-crypto</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.springframework.security</groupId>
-                    <artifactId>spring-security-core</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-config</artifactId>
-            <exclusions>
-            <exclusion>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-core</artifactId>
-            </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework.security</groupId>
-                    <artifactId>spring-security-core</artifactId>
-                </exclusion>
-            </exclusions>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>net.javacrumbs.shedlock</groupId>
@@ -380,7 +352,13 @@
         </dependency>
         <dependency>
             <groupId>com.azure</groupId>
-            <artifactId>azure-security-keyvault-keys</artifactId>
+            <artifactId>azure-core</artifactId>
+            <version>${azure-core.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-stdlib</artifactId>
+            <version>${kotlin.version}</version>
         </dependency>
         <dependency>
             <groupId>com.azure</groupId>
@@ -389,33 +367,33 @@
         <dependency>
             <groupId>com.azure</groupId>
             <artifactId>azure-identity</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.azure</groupId>
-            <artifactId>azure-core</artifactId>
+            <version>${azure-identity.version}</version>
         </dependency>
         <dependency>
             <groupId>com.azure</groupId>
             <artifactId>azure-core-http-netty</artifactId>
+            <version>${azure-core-http-netty.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-security-keyvault-keys</artifactId>
+            <version>${azure-security-keyvault-keys.version}</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jgit</groupId>
             <artifactId>org.eclipse.jgit</artifactId>
-            <version>7.4.0.202509020913-r</version>
+            <version>6.9.0.202403050737-r</version>
+        </dependency>
+        <!--  Explicit overrides for vulnerable transitives reported by OWASP.  -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jetbrains</groupId>
-            <artifactId>annotations</artifactId>
-            <version>24.0.0</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.tomcat.embed</groupId>
-            <artifactId>tomcat-embed-core</artifactId>
-            <version>11.0.18</version>
+            <groupId>com.nimbusds</groupId>
+            <artifactId>nimbus-jose-jwt</artifactId>
         </dependency>
     </dependencies>
-
     <build>
         <pluginManagement>
             <plugins>
@@ -460,12 +438,13 @@
             <plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
-                <version>12.1.6</version>
+                <version>${owasp.version}</version>
                 <configuration>
-                    <dataDirectory>./CVE-files</dataDirectory>
                     <suppressionFile>./owasp/suppressions.xml</suppressionFile>
-                    <failBuildOnCVSS>8.0</failBuildOnCVSS>
+                    <failBuildOnCVSS>8</failBuildOnCVSS>
                     <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
+                    <skipTestScope>true</skipTestScope>
+                    <skipProvidedScope>true</skipProvidedScope>
                 </configuration>
             </plugin>
             <plugin>
@@ -533,7 +512,6 @@
                         <exclude>**/model/*</exclude>
                         <exclude>**/entity/*</exclude>
                         <exclude>**/config/*</exclude>
-                        <exclude>**/entity/*</exclude>
                     </excludes>
                 </configuration>
                 <executions>
@@ -649,7 +627,6 @@
                             <descriptors>
                                 <descriptor>src/assembly/assembly.xml</descriptor>
                             </descriptors>
-                            <appendAssemblyId>false</appendAssemblyId>
                         </configuration>
                     </execution>
                     <execution>
@@ -664,7 +641,6 @@
                             <descriptors>
                                 <descriptor>src/assembly/assembly.xml</descriptor>
                             </descriptors>
-                            <appendAssemblyId>false</appendAssemblyId>
                         </configuration>
                     </execution>
                     <execution>
@@ -679,7 +655,6 @@
                             <descriptors>
                                 <descriptor>src/assembly/assembly.xml</descriptor>
                             </descriptors>
-                            <appendAssemblyId>false</appendAssemblyId>
                         </configuration>
                     </execution>
                     <execution>
@@ -694,7 +669,6 @@
                             <descriptors>
                                 <descriptor>src/assembly/assembly.xml</descriptor>
                             </descriptors>
-                            <appendAssemblyId>false</appendAssemblyId>
                         </configuration>
                     </execution>
                 </executions>
@@ -717,5 +691,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>
