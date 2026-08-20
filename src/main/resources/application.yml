@@ -136,3 +136,7 @@ dgc:
 springdoc:
   api-docs:
     enabled: false
+
+
+env:
+  mode: default

@@ -49,6 +49,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.util.encoders.DecoderException;
 import org.bouncycastle.util.encoders.Hex;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 import org.springframework.stereotype.Component;
@@ -61,6 +62,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 @Slf4j
 @Component
 @AllArgsConstructor
+@ConditionalOnProperty(name = "env.mode", havingValue = "prod",  matchIfMissing = true)
 public class CertificateAuthenticationFilter extends OncePerRequestFilter {
 
     public static final String REQUEST_PROP_COUNTRY = "reqPropCountry";
