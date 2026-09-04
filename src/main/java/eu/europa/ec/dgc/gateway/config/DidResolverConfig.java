@@ -20,8 +20,17 @@
 
 package eu.europa.ec.dgc.gateway.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.europa.ec.dgc.did.DidMethodDriver;
 import eu.europa.ec.dgc.did.DidResolver;
+import eu.europa.ec.dgc.did.DidWebDriver;
 import eu.europa.ec.dgc.did.UniversalDidResolver;
+import java.net.http.HttpClient;
+import java.security.GeneralSecurityException;
+import java.time.Duration;
+import java.util.List;
+import javax.net.ssl.SSLContext;
+import org.springframework.beans.factory.BeanInitializationException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -31,10 +40,30 @@ public class DidResolverConfig {
     /**
      * Creates a {@link DidResolver} bean backed by the {@link UniversalDidResolver}.
      *
+     * <p>Uses a dedicated HTTP client for did:web resolution with TLS v1.2 and HTTP/1.1
+     * to avoid intermittent TLS handshake failures with raw.githubusercontent.com.
+     *
+     * @param objectMapper mapper used by the DID web driver to deserialize DID documents
      * @return the DID resolver instance
      */
     @Bean
-    public DidResolver didResolver() {
-        return new UniversalDidResolver();
+    public DidResolver didResolver(ObjectMapper objectMapper) {
+        SSLContext sslContext;
+        try {
+            sslContext = SSLContext.getInstance("TLSv1.2");
+            sslContext.init(null, null, null);
+        } catch (GeneralSecurityException e) {
+            throw new BeanInitializationException("Failed to initialize SSL context for DID resolver.", e);
+        }
+
+        HttpClient didHttpClient = HttpClient.newBuilder()
+                .sslContext(sslContext)
+                .connectTimeout(Duration.ofSeconds(30))
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
+
+        List<DidMethodDriver> drivers = List.of(new DidWebDriver(didHttpClient, objectMapper));
+        return new UniversalDidResolver(drivers);
     }
 }

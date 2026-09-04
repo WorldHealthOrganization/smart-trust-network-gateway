@@ -1,5 +1,6 @@
 package eu.europa.ec.dgc.gateway.restapi.dto.did;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
@@ -178,12 +179,17 @@ public class TrustedUploadDidDocumentDto {
 
     @Getter
     @Setter
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class Proof {
         @NotBlank
         private String type;
 
         @NotBlank
         private String created;
+
+        private String domain;
+
+        private String nonce;
 
         @NotBlank
         private String proofPurpose;
