@@ -142,9 +142,9 @@ public class TrustedUploadDidDocumentDto {
 
             ECNamedCurveSpec curveSpec = (ECNamedCurveSpec) ecPublicKey.getParams();
             switch (curveSpec.getName()) {
-                case "prime256v1" -> curve = "P-256";
-                case "prime384v1" -> curve = "P-384";
-                case "prime521v1" -> curve = "P-521";
+                case "prime256v1", "secp256r1", "P-256" -> curve = "P-256";
+                case "prime384v1", "secp384r1", "P-384" -> curve = "P-384";
+                case "prime521v1", "secp521r1", "P-521" -> curve = "P-521";
                 default -> curve = "UNKNOWN CURVE";
             }
         }

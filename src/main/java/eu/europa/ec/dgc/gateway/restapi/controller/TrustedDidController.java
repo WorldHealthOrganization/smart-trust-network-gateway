@@ -10,10 +10,12 @@ import eu.europa.ec.dgc.did.DidResolver;
 import eu.europa.ec.dgc.did.DidVerificationService;
 import eu.europa.ec.dgc.did.model.DidDocument;
 import eu.europa.ec.dgc.did.model.VerificationMethod;
+import eu.europa.ec.dgc.gateway.entity.SignerInformationEntity;
 import eu.europa.ec.dgc.gateway.exception.DgcgResponseException;
 import eu.europa.ec.dgc.gateway.restapi.dto.ProblemReportDto;
 import eu.europa.ec.dgc.gateway.restapi.dto.did.TrustedDidPublicKeyDto;
 import eu.europa.ec.dgc.gateway.restapi.dto.did.TrustedUploadDidDocumentDto;
+import eu.europa.ec.dgc.gateway.service.SignerInformationService;
 import eu.europa.ec.dgc.gateway.utils.DidResolutionUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -44,6 +46,8 @@ public class TrustedDidController {
     private final DidResolver didResolver;
 
     private final DidVerificationService didVerificationService;
+
+    private final SignerInformationService signerInformationService;
 
     private static final ObjectMapper VERIFY_OBJECT_MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -126,6 +130,10 @@ public class TrustedDidController {
 
         boolean verified = verifyProof(trustedUploadDidDocumentDto, publicKey, verificationMethodId);
 
+        if (verified) {
+            storeUploadedDidDocument(trustedUploadDidDocumentDto, verificationMethodId);
+        }
+
         TrustedDidPublicKeyDto response = new TrustedDidPublicKeyDto(
                 Base64.getEncoder().encodeToString(publicKey.getEncoded()),
                 verified,
@@ -156,6 +164,28 @@ public class TrustedDidController {
                     verificationMethodId, e.getMessage());
             throw new DgcgResponseException(HttpStatus.BAD_GATEWAY, "0x302", "DID Proof Verification Error",
                     verificationMethodId, "Failed to verify proof of the uploaded DID document.");
+        }
+    }
+
+    /**
+     * Stores the certificates of a successfully verified DID document as signer information.
+     *
+     * @param trustedUploadDidDocumentDto the verified DID document to store
+     * @param verificationMethodId        the id of the verification method (used for error reporting)
+     */
+    private void storeUploadedDidDocument(TrustedUploadDidDocumentDto trustedUploadDidDocumentDto,
+                                          String verificationMethodId) {
+        try {
+            List<SignerInformationEntity> storedEntities =
+                    signerInformationService.addDidSignerCertificates(trustedUploadDidDocumentDto);
+
+            log.info("Stored {} SignerInformation entries from uploaded DID document for verification method {}",
+                    storedEntities.size(), verificationMethodId);
+        } catch (SignerInformationService.SignerCertCheckException e) {
+            log.error("Failed to store uploaded DID document for verification method {}: {}",
+                    verificationMethodId, e.getMessage());
+            throw new DgcgResponseException(HttpStatus.BAD_REQUEST, "0x303", "DID Upload Storage Error",
+                    verificationMethodId, e.getMessage());
         }
     }
 
