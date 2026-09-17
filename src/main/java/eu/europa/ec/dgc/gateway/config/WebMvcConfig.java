@@ -20,15 +20,36 @@
 
 package eu.europa.ec.dgc.gateway.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.europa.ec.dgc.gateway.restapi.converter.DidJsonHttpMessageConverter;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
+@RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
+
+    private final ObjectMapper objectMapper;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new MdcCleanupInterceptor());
+    }
+
+    /**
+     * Adds a dedicated read-only converter for the {@code application/did} media type.
+     *
+     * <p>The converter is appended to the existing converters, so all default converters and
+     * their supported media types remain unchanged.
+     *
+     * @param converters the configured message converters
+     */
+    @Override
+    public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
+        converters.add(new DidJsonHttpMessageConverter(objectMapper));
     }
 }

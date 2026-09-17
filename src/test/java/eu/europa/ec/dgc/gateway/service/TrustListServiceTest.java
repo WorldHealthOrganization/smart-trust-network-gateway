@@ -111,7 +111,8 @@ class TrustListServiceTest {
             "sig1",
             null,
             SignerInformationEntity.CertificateType.DSC,
-            null
+            null,
+            SignerInformationEntity.SourceType.CMS
         ));
 
         signerInformationRepository.save(new SignerInformationEntity(
@@ -123,7 +124,8 @@ class TrustListServiceTest {
             "sig2",
             null,
             SignerInformationEntity.CertificateType.DSC,
-            null
+            null,
+            SignerInformationEntity.SourceType.CMS
         ));
 
         federatedCertDscEx = CertificateTestUtils.generateCertificate(keyPairGenerator.generateKeyPair(), "EX", "Test");
@@ -136,7 +138,8 @@ class TrustListServiceTest {
             "sig3",
             null,
             SignerInformationEntity.CertificateType.DSC,
-            null
+            null,
+            SignerInformationEntity.SourceType.CMS
         );
         federatedDscEntity.setSourceGateway(federationGateway);
         signerInformationRepository.save(federatedDscEntity);

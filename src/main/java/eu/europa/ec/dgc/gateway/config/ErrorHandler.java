@@ -23,14 +23,20 @@ package eu.europa.ec.dgc.gateway.config;
 import eu.europa.ec.dgc.gateway.exception.DgcgResponseException;
 import eu.europa.ec.dgc.gateway.restapi.dto.ProblemReportDto;
 import jakarta.validation.ConstraintViolationException;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 @ControllerAdvice
@@ -74,5 +80,46 @@ public class ErrorHandler extends ResponseEntityExceptionHandler {
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(new ProblemReportDto("0x008", "Internal Server Error", "", e.getMessage()));
         }
+    }
+
+    /**
+     * Handles {@link MethodArgumentNotValidException} thrown when a {@code @Valid} request body fails validation.
+     *
+     * @param e       the thrown {@link MethodArgumentNotValidException}
+     * @param headers the headers of the request
+     * @param status  the status of the response
+     * @param request the current request
+     * @return A ResponseEntity with a ProblemReportDto describing the field errors.
+     */
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+        MethodArgumentNotValidException e, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        String details = e.getBindingResult().getFieldErrors().stream()
+            .map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage())
+            .collect(Collectors.joining("; "));
+
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(new ProblemReportDto("0x001", "Validation Error", "", details));
+    }
+
+    /**
+     * Handles {@link HttpMessageNotReadableException} thrown when the request body cannot be parsed.
+     *
+     * @param e       the thrown {@link HttpMessageNotReadableException}
+     * @param headers the headers of the request
+     * @param status  the status of the response
+     * @param request the current request
+     * @return A ResponseEntity with a ProblemReportDto describing the parse error.
+     */
+    @Override
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(
+        HttpMessageNotReadableException e, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(new ProblemReportDto(
+                "0x002", "Malformed Request Body", "", e.getMostSpecificCause().getMessage()));
     }
 }
