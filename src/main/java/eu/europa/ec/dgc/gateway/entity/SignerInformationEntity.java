@@ -76,9 +76,9 @@ public class SignerInformationEntity extends FederatedEntity {
     String rawData;
 
     /**
-     * Signature of the Upload Certificate.
+     * Signature of the Upload Certificate (CMS) or the Base64 encoded uploaded DID document (DID).
      */
-    @Column(name = "signature", length = 6000)
+    @Column(name = "signature", columnDefinition = "TEXT")
     String signature;
 
     /**

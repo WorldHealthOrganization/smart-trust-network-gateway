@@ -71,6 +71,9 @@ public interface SignerInformationRepository extends JpaRepository<SignerInforma
     List<SignerInformationEntity> getByCertificateTypeAndCountryAndSourceGatewayIsNullAndDomainIs(
         SignerInformationEntity.CertificateType type, String countryCode, String domain);
 
+    List<SignerInformationEntity> getBySourceTypeAndDomainAndCountryAndSourceGatewayIsNullOrderByCreatedAtDesc(
+        SignerInformationEntity.SourceType sourceType, String domain, String countryCode);
+
     @Transactional
     Long deleteBySourceGatewayGatewayId(String gatewayId);
 

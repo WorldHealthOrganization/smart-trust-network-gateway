@@ -15,5 +15,9 @@ public class TrustedDidPublicKeyDto {
 
     private boolean verified;
 
+    private boolean stored;
+
+    private int storedCertificates;
+
     private String message;
 }

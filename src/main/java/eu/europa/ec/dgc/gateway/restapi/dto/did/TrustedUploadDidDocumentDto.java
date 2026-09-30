@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -49,6 +50,8 @@ public class TrustedUploadDidDocumentDto {
     @NoArgsConstructor
     @Getter
     @Setter
+    // Explicit name, otherwise springdoc merges it with eu.europa.ec.dgc.did.model.VerificationMethod
+    @Schema(name = "TrustedUploadVerificationMethod")
     public static class VerificationMethod {
         @NotBlank
         @Pattern(regexp = "^did:[a-z0-9]+:.+")
@@ -100,6 +103,10 @@ public class TrustedUploadDidDocumentDto {
         @NotBlank
         @JsonProperty("kty")
         private String keyType;
+
+        @JsonProperty("kid")
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private String keyId;
 
         @NotEmpty
         @JsonProperty("x5c")
