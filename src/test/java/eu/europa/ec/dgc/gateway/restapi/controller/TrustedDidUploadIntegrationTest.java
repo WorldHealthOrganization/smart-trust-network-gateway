@@ -31,6 +31,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.europa.ec.dgc.did.DidResolver;
 import eu.europa.ec.dgc.gateway.config.DgcConfigProperties;
 import eu.europa.ec.dgc.did.DidVerificationService;
@@ -52,6 +54,7 @@ import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -78,6 +81,7 @@ class TrustedDidUploadIntegrationTest {
     private static final String DID = DidTestHelper.DID;
     private static final String VERIFICATION_METHOD = DidTestHelper.VERIFICATION_METHOD;
     private static final String COUNTRY = "DE";
+    private static final String UPLOADED_KID = "jwk-kid-1";
 
     private static final String TNG_PROOF_VERIFICATION_METHOD =
         "did:web:raw.githubusercontent.com:WorldHealthOrganization:tng-participants-dev:main:WHO:signing:DID";
@@ -117,10 +121,12 @@ class TrustedDidUploadIntegrationTest {
     private ECPublicKey uploadedPublicKey;
     private X509Certificate uploadedCertificate;
     private String encodedUploadedCertificate;
+    private String uploadedKid;
 
     @BeforeEach
     void setup() throws Exception {
         signerInformationRepository.deleteAll();
+        uploadedKid = UPLOADED_KID;
 
         CloudmersiveThreatDetectionResponse threatResponse = new CloudmersiveThreatDetectionResponse();
         threatResponse.setCleanResult(true);
@@ -165,7 +171,7 @@ class TrustedDidUploadIntegrationTest {
 
         // Default values for the remaining columns
         Assertions.assertEquals("DCC", entity.getDomain());
-        Assertions.assertNull(entity.getKid());
+        Assertions.assertEquals(UPLOADED_KID, entity.getKid(), "KID must be the kid of the publicKeyJwk.");
         Assertions.assertNull(entity.getProperties());
         Assertions.assertNull(entity.getSourceGateway());
 
@@ -449,7 +455,7 @@ class TrustedDidUploadIntegrationTest {
         Assertions.assertEquals(SignerInformationEntity.SourceType.DID, didEntity.getSourceType());
         Assertions.assertEquals(1, didEntity.getVersion());
         Assertions.assertEquals("DDCC", didEntity.getDomain());
-        Assertions.assertNull(didEntity.getKid(), "CMS specific values must not be carried over.");
+        Assertions.assertEquals(UPLOADED_KID, didEntity.getKid(), "CMS KID must be replaced by the JWK kid.");
         Assertions.assertNotEquals("cms-signature", didEntity.getSignature());
     }
 
@@ -485,6 +491,10 @@ class TrustedDidUploadIntegrationTest {
             Set.of(TNG_DSC_1_THUMBPRINT_PREFIX, TNG_DSC_2_THUMBPRINT_PREFIX),
             stored.stream().map(e -> e.getThumbprint().substring(0, 16)).collect(Collectors.toSet()),
             "Exactly x5c[0] of each verification method must be stored.");
+        Assertions.assertEquals(
+            Set.of("UGBG+QWdeac=", "w+DsHSLT6Y0="),
+            stored.stream().map(SignerInformationEntity::getKid).collect(Collectors.toSet()),
+            "KID must be the kid of each publicKeyJwk.");
         Assertions.assertTrue(stored.stream().noneMatch(e -> e.getThumbprint().startsWith(TNG_CSCA_THUMBPRINT_PREFIX)),
             "The CSCA of the x5c chain must not be stored as signer information.");
 
@@ -524,6 +534,63 @@ class TrustedDidUploadIntegrationTest {
         Assertions.assertEquals(2, stored.size());
         Assertions.assertTrue(stored.stream().allMatch(e -> e.getVersion() == 2),
             "Every verification method must be replaced on re-upload.");
+        Assertions.assertEquals(
+            Set.of("UGBG+QWdeac=", "w+DsHSLT6Y0="),
+            stored.stream().map(SignerInformationEntity::getKid).collect(Collectors.toSet()),
+            "Re-upload must keep the KID of the replaced entries.");
+    }
+
+    @Test
+    void testDidKidAlreadyUsedByOtherCertificateIsRejected() throws Exception {
+        when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
+
+        SignerInformationEntity otherEntity = new SignerInformationEntity();
+        otherEntity.setCountry(COUNTRY);
+        otherEntity.setThumbprint("0".repeat(64));
+        otherEntity.setRawData("other");
+        otherEntity.setSignature("other-signature");
+        otherEntity.setKid(UPLOADED_KID);
+        otherEntity.setCertificateType(SignerInformationEntity.CertificateType.DSC);
+        otherEntity.setDomain("DCC");
+        signerInformationRepository.save(otherEntity);
+
+        mockMvc.perform(authenticated(put("/trusted-did"))
+                .contentType(MediaType.valueOf("application/did"))
+                .content(buildUploadDidDocument(encodedUploadedCertificate, "\"participant\": {\"code\": \"DE\"},")))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.details").value(org.hamcrest.Matchers.containsString("KID " + UPLOADED_KID)));
+
+        Assertions.assertEquals(1, signerInformationRepository.findAll().size());
+    }
+
+    @Test
+    void testDidWithoutJwkKidIsStoredWithoutKid() throws Exception {
+        when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
+
+        mockMvc.perform(authenticated(put("/trusted-did"))
+                .contentType(MediaType.valueOf("application/did"))
+                .content(buildUploadDidDocument(encodedUploadedCertificate, "\"participant\": {\"code\": \"DE\"},")
+                    .replace("\"kid\": \"" + UPLOADED_KID + "\",", "")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.storedCertificates").value(1));
+
+        List<SignerInformationEntity> stored = signerInformationRepository.findAll();
+        Assertions.assertEquals(1, stored.size());
+        Assertions.assertNull(stored.get(0).getKid(), "Without JWK kid no KID must be stored.");
+    }
+
+    @Test
+    void testTooLongJwkKidIsRejected() throws Exception {
+        when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
+        uploadedKid = "k".repeat(21);
+
+        mockMvc.perform(authenticated(put("/trusted-did"))
+                .contentType(MediaType.valueOf("application/did"))
+                .content(buildUploadDidDocument(encodedUploadedCertificate, "\"participant\": {\"code\": \"DE\"},")))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.details").value(org.hamcrest.Matchers.containsString("maximum length")));
+
+        Assertions.assertTrue(signerInformationRepository.findAll().isEmpty());
     }
 
     @Test
@@ -582,6 +649,47 @@ class TrustedDidUploadIntegrationTest {
     }
 
     @Test
+    void testGetTrustedDidMaintainsAttributeOrderOfUploadedDocument() throws Exception {
+        when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
+        trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.UPLOAD, "AD");
+        mockDidResolution(TNG_PROOF_VERIFICATION_METHOD);
+
+        String didDocument = readResource("did/tng-multi-verification-method-did.json");
+
+        mockMvc.perform(authenticated(put("/trusted-did"))
+                .contentType(MediaType.valueOf("application/did"))
+                .content(didDocument))
+            .andExpect(status().isOk());
+
+        String response = mockMvc.perform(authenticated(get("/trusted-did/DCC/AND/DSC")))
+            .andExpect(status().isOk())
+            .andReturn().getResponse().getContentAsString();
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode expected = objectMapper.readTree(didDocument);
+        JsonNode actual = objectMapper.readTree(response);
+
+        Assertions.assertEquals(expected, actual, "Returned document must match the uploaded document.");
+        assertSameAttributeOrder(expected, actual, "$");
+    }
+
+    private void assertSameAttributeOrder(JsonNode expected, JsonNode actual, String path) {
+        if (expected.isObject()) {
+            List<String> expectedNames = new ArrayList<>();
+            List<String> actualNames = new ArrayList<>();
+            expected.fieldNames().forEachRemaining(expectedNames::add);
+            actual.fieldNames().forEachRemaining(actualNames::add);
+            Assertions.assertEquals(expectedNames, actualNames, "Attribute order differs at " + path);
+            expectedNames.forEach(name ->
+                assertSameAttributeOrder(expected.get(name), actual.get(name), path + "." + name));
+        } else if (expected.isArray()) {
+            for (int i = 0; i < expected.size(); i++) {
+                assertSameAttributeOrder(expected.get(i), actual.get(i), path + "[" + i + "]");
+            }
+        }
+    }
+
+    @Test
     void testGetTrustedDidReturnsNotFoundForUnknownCriteria() throws Exception {
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
         trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.UPLOAD, "XA");
@@ -616,6 +724,8 @@ class TrustedDidUploadIntegrationTest {
         uploadedPublicKey = (ECPublicKey) secondKeyPair.getPublic();
         encodedUploadedCertificate = Base64.getEncoder().encodeToString(
             CertificateTestUtils.generateCertificate(secondKeyPair, COUNTRY, "Second DSC").getEncoded());
+
+        uploadedKid = "jwk-kid-2";
 
         mockMvc.perform(authenticated(put("/trusted-did/DDCC/XXA/CSCA"))
                 .contentType(MediaType.valueOf("application/did"))
@@ -715,6 +825,7 @@ class TrustedDidUploadIntegrationTest {
                   %s
                   "publicKeyJwk": {
                     "kty": "EC",
+                    "kid": "%s",
                     "crv": "P-256",
                     "x": "%s",
                     "y": "%s",
@@ -730,7 +841,7 @@ class TrustedDidUploadIntegrationTest {
                 "jws": "******"
               }
             }
-            """.formatted(DID, DID, VERIFICATION_METHOD, DID, participantProperty,
+            """.formatted(DID, DID, VERIFICATION_METHOD, DID, participantProperty, uploadedKid,
                 DidTestHelper.encodeCoordinate(uploadedPublicKey.getW().getAffineX()),
                 DidTestHelper.encodeCoordinate(uploadedPublicKey.getW().getAffineY()),
                 encodedCertificate, VERIFICATION_METHOD);

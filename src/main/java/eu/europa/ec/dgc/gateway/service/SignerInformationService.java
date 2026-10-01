@@ -91,6 +91,11 @@ public class SignerInformationService {
 
     private static final String DEFAULT_DOMAIN = "DCC";
 
+    /**
+     * Maximum length of the {@code kid} column of {@link SignerInformationEntity}.
+     */
+    private static final int MAX_KID_LENGTH = 20;
+
 
     /**
      * Method to query persistence layer for SignerInformation filtered by Type = DSC.
@@ -355,9 +360,11 @@ public class SignerInformationService {
                 continue;
             }
 
+            String kid = resolveKid(verificationMethod);
+
             storedEntities.put(thumbprint,
                 addDidSignerCertificate(encodedCertificate, keyCertificate, signerCertificate, signature,
-                    countryCode, domain, keyUsage));
+                    countryCode, domain, keyUsage, kid));
         }
 
         return new ArrayList<>(storedEntities.values());
@@ -393,7 +400,23 @@ public class SignerInformationService {
             .map(this::decodeDidDocument)
             .filter(Objects::nonNull)
             .filter(document -> containsVerificationMethod(document, normalizedDomain, normalizedKeyUsage))
-            .findFirst();
+            .findFirst()
+            .map(this::toOrderedDidDocument);
+    }
+
+    /**
+     * Re-serializes a stored DID document through {@link TrustedUploadDidDocumentDto}, so the attributes are
+     * always returned in the order defined by its {@code @JsonPropertyOrder}, also for documents stored before
+     * the order was defined.
+     */
+    private String toOrderedDidDocument(String didDocument) {
+        try {
+            return objectMapper.writeValueAsString(
+                objectMapper.readValue(didDocument, TrustedUploadDidDocumentDto.class));
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to re-serialize stored DID document, returning it unchanged: {}", e.getMessage());
+            return didDocument;
+        }
     }
 
     /**
@@ -542,7 +565,8 @@ public class SignerInformationService {
         String signature,
         String countryCode,
         String domain,
-        String keyUsage
+        String keyUsage,
+        String kid
     ) throws SignerCertCheckException {
 
         String thumbprint = certificateUtils.getCertThumbprint(uploadedCertificate);
@@ -552,7 +576,7 @@ public class SignerInformationService {
 
         SignerInformationEntity signerInformation = resolveDidTargetEntity(thumbprint);
 
-        contentCheckKidAlreadyExists(uploadedCertificate, null);
+        contentCheckDidKidAlreadyExists(thumbprint, kid);
 
         signerInformation.setCreatedAt(ZonedDateTime.now());
         signerInformation.setCountry(countryCode);
@@ -562,18 +586,72 @@ public class SignerInformationService {
         signerInformation.setSignature(signature);
         signerInformation.setSourceType(SignerInformationEntity.SourceType.DID);
         signerInformation.setDomain(domain != null ? domain : DEFAULT_DOMAIN);
-        signerInformation.setKid(null);
+        signerInformation.setKid(kid);
         signerInformation.setProperties(null);
         signerInformation.setSourceGateway(null);
 
-        log.info("Saving SignerInformation Entity imported from DID document (domain={}, keyusage={}, version={})",
-            signerInformation.getDomain(), keyUsage, signerInformation.getVersion());
+        log.info("Saving SignerInformation Entity imported from DID document "
+                + "(domain={}, keyusage={}, kid={}, version={})",
+            signerInformation.getDomain(), keyUsage, kid, signerInformation.getVersion());
 
         SignerInformationEntity savedEntity = signerInformationRepository.save(signerInformation);
 
         DgcMdc.remove(MDC_PROP_UPLOAD_CERT_THUMBPRINT);
 
         return savedEntity;
+    }
+
+    /**
+     * Extracts the KID of a verification method from the {@code kid} property of its {@code publicKeyJwk}.
+     *
+     * @param verificationMethod the verification method
+     * @return the KID or {@code null} if the JWK does not contain a {@code kid}
+     * @throws SignerCertCheckException if the KID exceeds the maximum length of the KID column
+     */
+    private String resolveKid(TrustedUploadDidDocumentDto.VerificationMethod verificationMethod)
+        throws SignerCertCheckException {
+
+        TrustedUploadDidDocumentDto.PublicKeyJwk publicKeyJwk = verificationMethod.getPublicKeyJwk();
+        String kid = publicKeyJwk == null || publicKeyJwk.getKeyId() == null
+            ? null : publicKeyJwk.getKeyId().trim();
+
+        if (kid == null || kid.isEmpty()) {
+            return null;
+        }
+
+        if (kid.length() > MAX_KID_LENGTH) {
+            throw new SignerCertCheckException(SignerCertCheckException.Reason.KID_CHECK_FAILED,
+                "KID %s of verification method %s exceeds the maximum length of %d characters.",
+                kid, verificationMethod.getId(), MAX_KID_LENGTH);
+        }
+
+        return kid;
+    }
+
+    /**
+     * Ensures the KID of a certificate imported from a DID document is not used by any other certificate.
+     *
+     * <p>The entity with the same thumbprint is excluded, as it is replaced by the DID import.
+     *
+     * @param thumbprint the thumbprint of the imported certificate
+     * @param kid        the KID taken from the verification method, may be {@code null}
+     */
+    private void contentCheckDidKidAlreadyExists(String thumbprint, String kid) throws SignerCertCheckException {
+
+        String effectiveKid = kid != null ? kid : thumbprint.substring(0, 16);
+
+        if (signerInformationRepository.getFirstByThumbprintStartsWithAndThumbprintIsNot(effectiveKid, thumbprint)
+            .isPresent()) {
+            throw new SignerCertCheckException(SignerCertCheckException.Reason.KID_CHECK_FAILED,
+                "A certificate with KID %s already exists", effectiveKid);
+        }
+
+        Optional<SignerInformationEntity> kidOwner = signerInformationRepository.getFirstByKid(effectiveKid);
+
+        if (kidOwner.isPresent() && !thumbprint.equals(kidOwner.get().getThumbprint())) {
+            throw new SignerCertCheckException(SignerCertCheckException.Reason.KID_CHECK_FAILED,
+                "A certificate with KID %s already exists", effectiveKid);
+        }
     }
 
     /**
