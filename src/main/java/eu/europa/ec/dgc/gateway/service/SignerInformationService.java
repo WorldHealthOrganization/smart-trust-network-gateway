@@ -27,15 +27,26 @@ import eu.europa.ec.dgc.gateway.entity.FederationGatewayEntity;
 import eu.europa.ec.dgc.gateway.entity.SignerInformationEntity;
 import eu.europa.ec.dgc.gateway.entity.TrustedPartyEntity;
 import eu.europa.ec.dgc.gateway.repository.SignerInformationRepository;
+import eu.europa.ec.dgc.gateway.restapi.dto.did.TrustedUploadDidDocumentDto;
 import eu.europa.ec.dgc.gateway.utils.DgcMdc;
 import eu.europa.ec.dgc.utils.CertificateUtils;
 import java.io.IOException;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.RSAPublicKey;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.MissingResourceException;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.Getter;
@@ -45,11 +56,13 @@ import org.bouncycastle.asn1.x500.RDN;
 import org.bouncycastle.asn1.x509.X509ObjectIdentifiers;
 import org.bouncycastle.cert.CertException;
 import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.operator.ContentVerifierProvider;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.RuntimeOperatorException;
 import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -70,6 +83,18 @@ public class SignerInformationService {
 
     private static final String MDC_PROP_UPLOAD_CERT_THUMBPRINT = "uploadCertThumbprint";
     private static final String MDC_PROP_CSCA_CERT_THUMBPRINT = "cscaCertThumbprint";
+
+    /**
+     * Separator used by TNG to publish coded values of a verification method as DID fragment reference.
+     */
+    private static final String DID_FRAGMENT_SEPARATOR = "#";
+
+    private static final String DEFAULT_DOMAIN = "DCC";
+
+    /**
+     * Maximum length of the {@code kid} column of {@link SignerInformationEntity}.
+     */
+    private static final int MAX_KID_LENGTH = 20;
 
 
     /**
@@ -137,6 +162,9 @@ public class SignerInformationService {
     /**
      * Adds a new Trusted Certificate to TrustStore DB.
      *
+     * <p>If the same certificate was previously imported from a DID document by the same country, the CMS upload
+     * supersedes it: the DID entry is removed and a new CMS entry is created.
+     *
      * @param uploadedCertificate      the certificate to add
      * @param signerCertificate        the certificate which was used to sign the message
      * @param signature                the detached signature of cms message
@@ -148,6 +176,7 @@ public class SignerInformationService {
      * @return created Entity
      * @throws SignerCertCheckException if something went wrong
      */
+    @Transactional(rollbackFor = SignerCertCheckException.class)
     public SignerInformationEntity addTrustedCertificate(
         X509CertificateHolder uploadedCertificate,
         X509CertificateHolder signerCertificate,
@@ -172,7 +201,8 @@ public class SignerInformationService {
             contentCheckOneOf(key, configProperties.getTrustedCertificates().getAllowedProperties());
         }
         contentCheckCsca(uploadedCertificate, authenticatedCountryCode, group);
-        contentCheckAlreadyExists(uploadedCertificate);
+        final Optional<SignerInformationEntity> supersededDidEntity =
+            resolveSupersededDidEntity(uploadedCertificate, authenticatedCountryCode);
         contentCheckKidAlreadyExists(uploadedCertificate, kid);
 
         // All checks passed --> Save to DB
@@ -200,6 +230,14 @@ public class SignerInformationService {
                 throw new SignerCertCheckException(SignerCertCheckException.Reason.PROPERTY_SERIALIZATION_FAILED,
                     "Failed to serialize properties.");
             }
+        }
+
+        if (supersededDidEntity.isPresent()) {
+            log.info("Removing existing DID SignerInformation Entity {} to replace it with CMS upload",
+                supersededDidEntity.get().getId());
+            signerInformationRepository.delete(supersededDidEntity.get());
+            // Hibernate executes inserts before deletes, which would violate the unique thumbprint constraint
+            signerInformationRepository.flush();
         }
 
         log.info("Saving new SignerInformation Entity");
@@ -276,6 +314,7 @@ public class SignerInformationService {
      * @throws SignerCertCheckException if validation check has failed. The exception contains
      *                                  a reason property with detailed information why the validation has failed.
      */
+    @Transactional(rollbackFor = SignerCertCheckException.class)
     public SignerInformationEntity addSignerCertificate(
         X509CertificateHolder uploadedCertificate,
         X509CertificateHolder signerCertificate,
@@ -292,6 +331,468 @@ public class SignerInformationService {
             null,
             null,
             Collections.emptyMap());
+    }
+
+    /**
+     * Adds the certificates of a successfully verified uploaded DID document to the TrustStore DB.
+     *
+     * <p>A DID document may contain any number of verification methods, each carrying its own JWK. Per
+     * RFC 7517 section 4.7 the first entry of the {@code x5c} property is the certificate containing the key of the
+     * JWK, all further entries form its certificate chain (e.g. the CSCA). Therefore exactly one entry is created per
+     * verification method, based on {@code x5c[0]}. The country is taken from the participant code of the
+     * verification method, the signer certificate is the upload certificate (UP.pem) of that participant and the
+     * signature is the Base64 encoded representation of the uploaded DID document.
+     *
+     * @param didDocument the verified DID document to persist
+     * @return the created or replaced entities, one per distinct certificate
+     * @throws SignerCertCheckException if validation check has failed. The exception contains
+     *                                  a reason property with detailed information why the validation has failed.
+     */
+    @Transactional(rollbackFor = SignerCertCheckException.class)
+    public List<SignerInformationEntity> addDidSignerCertificates(TrustedUploadDidDocumentDto didDocument)
+        throws SignerCertCheckException {
+
+        String signature = encodeDidDocumentAsSignature(didDocument);
+        Map<String, SignerInformationEntity> storedEntities = new LinkedHashMap<>();
+
+        for (TrustedUploadDidDocumentDto.VerificationMethod verificationMethod : didDocument.getVerificationMethod()) {
+            String countryCode = resolveParticipantCountryCode(verificationMethod);
+            String domain = resolveDomain(verificationMethod);
+            String keyUsage = resolveKeyUsage(verificationMethod);
+            X509CertificateHolder signerCertificate = getUploadCertificate(countryCode);
+
+            TrustedUploadDidDocumentDto.PublicKeyJwk publicKeyJwk = verificationMethod.getPublicKeyJwk();
+            String encodedCertificate = publicKeyJwk.getEncodedX509Certificates().get(0);
+            X509CertificateHolder keyCertificate = parseCertificate(encodedCertificate);
+
+            contentCheckDidKeyCertificate(keyCertificate, publicKeyJwk, verificationMethod.getId());
+
+            String thumbprint = certificateUtils.getCertThumbprint(keyCertificate);
+            if (storedEntities.containsKey(thumbprint)) {
+                log.info("Skipping verification method {}: certificate {} already imported from this document",
+                    verificationMethod.getId(), thumbprint);
+                continue;
+            }
+
+            String kid = resolveKid(verificationMethod);
+
+            storedEntities.put(thumbprint,
+                addDidSignerCertificate(encodedCertificate, keyCertificate, signerCertificate, signature,
+                    countryCode, domain, keyUsage, kid));
+        }
+
+        return new ArrayList<>(storedEntities.values());
+    }
+
+    /**
+     * Deletes all entries imported from uploaded DID documents for the given domain, participant and key usage.
+     *
+     * <p>All coded values may be provided with or without DID fragment prefix (e.g. {@code #DCC} or {@code DCC}).
+     * The participant may be an ISO 3166 Alpha-2 or Alpha-3 code. Every entry of the given domain and country
+     * whose stored DID document contains a verification method matching the requested domain and key usage is
+     * removed.
+     *
+     * @param domain      the domain, e.g. {@code DCC}
+     * @param participant the participant code, e.g. {@code DE} or {@code DEU}
+     * @param keyUsage    the key usage, e.g. {@code DSC} or {@code CSCA}
+     * @return the number of deleted entries
+     * @throws SignerCertCheckException if the participant code is not a valid country code
+     */
+    @Transactional(rollbackFor = SignerCertCheckException.class)
+    public int deleteDidSignerCertificates(String domain, String participant, String keyUsage)
+        throws SignerCertCheckException {
+
+        String normalizedDomain = normalizeCode(domain);
+        String normalizedKeyUsage = normalizeCode(keyUsage);
+        String countryCode = normalizeParticipantCountryCode(participant);
+
+        List<SignerInformationEntity> entitiesToDelete = signerInformationRepository
+            .getBySourceTypeAndDomainAndCountryAndSourceGatewayIsNullOrderByCreatedAtDesc(
+                SignerInformationEntity.SourceType.DID, normalizedDomain, countryCode)
+            .stream()
+            .filter(entity -> entity.getSignature() != null)
+            .filter(entity -> {
+                String didDocument = decodeDidDocument(entity.getSignature());
+                return didDocument != null
+                    && containsVerificationMethod(didDocument, normalizedDomain, normalizedKeyUsage);
+            })
+            .toList();
+
+        entitiesToDelete.forEach(entity -> log.info(
+            "Deleting DID SignerInformation Entity {} (domain={}, country={}, keyusage={})",
+            entity.getId(), normalizedDomain, countryCode, normalizedKeyUsage));
+
+        signerInformationRepository.deleteAll(entitiesToDelete);
+
+        return entitiesToDelete.size();
+    }
+
+    private String decodeDidDocument(String signature) {
+        try {
+            return new String(Base64.getDecoder().decode(signature), StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            log.warn("Failed to decode stored DID document: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private boolean containsVerificationMethod(String didDocument, String domain, String keyUsage) {
+        try {
+            TrustedUploadDidDocumentDto document =
+                objectMapper.readValue(didDocument, TrustedUploadDidDocumentDto.class);
+
+            if (document.getVerificationMethod() == null) {
+                return false;
+            }
+
+            return document.getVerificationMethod().stream().anyMatch(verificationMethod -> {
+                String methodDomain = resolveDomain(verificationMethod);
+                return keyUsage.equals(resolveKeyUsage(verificationMethod))
+                    && domain.equals(methodDomain != null ? methodDomain : DEFAULT_DOMAIN);
+            });
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to parse stored DID document: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    private String normalizeCode(String code) {
+        String strippedCode = stripDidFragmentPrefix(code);
+        return strippedCode == null ? "" : strippedCode.toUpperCase(Locale.ROOT);
+    }
+
+    /**
+     * Normalizes a DID participant to its Alpha-2 country, including fragment prefixes and virtual countries.
+     *
+     * @param participant the Alpha-2 or Alpha-3 participant code
+     * @return the normalized Alpha-2 country code
+     * @throws SignerCertCheckException if the participant cannot be mapped to a country code
+     */
+    public String normalizeParticipantCountryCode(String participant) throws SignerCertCheckException {
+        return toAlpha2CountryCode(normalizeCode(participant));
+    }
+
+    private String toAlpha2CountryCode(String participantCode) throws SignerCertCheckException {
+        if (participantCode.length() == 2) {
+            return participantCode;
+        } else if (participantCode.length() == 3) {
+            return convertAlpha3ToAlpha2(participantCode);
+        }
+
+        throw new SignerCertCheckException(SignerCertCheckException.Reason.COUNTRY_OF_ORIGIN_CHECK_FAILED,
+            "Participant code %s is not a valid country code.", participantCode);
+    }
+
+    /**
+     * Ensures {@code x5c[0]} is an end-entity certificate holding exactly the public key of the JWK.
+     *
+     * <p>Coordinates are compared as unsigned integers because some publishers encode them with a leading
+     * {@code 0x00} sign byte (e.g. {@code "AMj6..."}), which is the same key.
+     */
+    private void contentCheckDidKeyCertificate(X509CertificateHolder keyCertificate,
+                                               TrustedUploadDidDocumentDto.PublicKeyJwk publicKeyJwk,
+                                               String verificationMethodId) throws SignerCertCheckException {
+
+        X509Certificate certificate;
+        try {
+            certificate = new JcaX509CertificateConverter().getCertificate(keyCertificate);
+        } catch (CertificateException e) {
+            throw new SignerCertCheckException(SignerCertCheckException.Reason.UPLOAD_FAILED,
+                "Failed to parse x5c[0] of verification method %s: %s", verificationMethodId, e.getMessage());
+        }
+
+        if (certificate.getBasicConstraints() >= 0) {
+            throw new SignerCertCheckException(SignerCertCheckException.Reason.UPLOAD_FAILED,
+                "x5c[0] of verification method %s is a CA certificate, expected the certificate of the JWK key.",
+                verificationMethodId);
+        }
+
+        boolean matches;
+        if (publicKeyJwk instanceof TrustedUploadDidDocumentDto.EcPublicKeyJwk ecJwk
+            && certificate.getPublicKey() instanceof ECPublicKey ecPublicKey) {
+            matches = ecPublicKey.getW().getAffineX().equals(decodeUnsignedBase64Url(ecJwk.getValueX()))
+                && ecPublicKey.getW().getAffineY().equals(decodeUnsignedBase64Url(ecJwk.getValueY()));
+        } else if (publicKeyJwk instanceof TrustedUploadDidDocumentDto.RsaPublicKeyJwk rsaJwk
+            && certificate.getPublicKey() instanceof RSAPublicKey rsaPublicKey) {
+            matches = rsaPublicKey.getModulus().equals(decodeUnsignedBase64Url(rsaJwk.getValueN()))
+                && rsaPublicKey.getPublicExponent().equals(decodeUnsignedBase64Url(rsaJwk.getValueE()));
+        } else {
+            matches = false;
+        }
+
+        if (!matches) {
+            throw new SignerCertCheckException(SignerCertCheckException.Reason.UPLOAD_FAILED,
+                "Public key of x5c[0] does not match the JWK of verification method %s.", verificationMethodId);
+        }
+    }
+
+    private BigInteger decodeUnsignedBase64Url(String value) throws SignerCertCheckException {
+        try {
+            return new BigInteger(1, Base64.getUrlDecoder().decode(value));
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new SignerCertCheckException(SignerCertCheckException.Reason.UPLOAD_FAILED,
+                "JWK contains an invalid key parameter.");
+        }
+    }
+
+    private SignerInformationEntity addDidSignerCertificate(
+        String encodedCertificate,
+        X509CertificateHolder uploadedCertificate,
+        X509CertificateHolder signerCertificate,
+        String signature,
+        String countryCode,
+        String domain,
+        String keyUsage,
+        String kid
+    ) throws SignerCertCheckException {
+
+        String thumbprint = certificateUtils.getCertThumbprint(uploadedCertificate);
+
+        contentCheckForThreats(uploadedCertificate);
+        contentCheckUploaderCertificate(signerCertificate, countryCode);
+
+        SignerInformationEntity signerInformation = resolveDidTargetEntity(thumbprint, countryCode);
+
+        contentCheckDidKidAlreadyExists(thumbprint, kid);
+
+        signerInformation.setCreatedAt(ZonedDateTime.now());
+        signerInformation.setCountry(countryCode);
+        signerInformation.setRawData(encodedCertificate);
+        signerInformation.setThumbprint(thumbprint);
+        signerInformation.setCertificateType(SignerInformationEntity.CertificateType.DSC);
+        signerInformation.setSignature(signature);
+        signerInformation.setSourceType(SignerInformationEntity.SourceType.DID);
+        signerInformation.setDomain(domain != null ? domain : DEFAULT_DOMAIN);
+        signerInformation.setKid(kid);
+        signerInformation.setProperties(null);
+        signerInformation.setSourceGateway(null);
+
+        log.info("Saving SignerInformation Entity imported from DID document "
+                + "(domain={}, keyusage={}, kid={}, version={})",
+            signerInformation.getDomain(), keyUsage, kid, signerInformation.getVersion());
+
+        SignerInformationEntity savedEntity = signerInformationRepository.save(signerInformation);
+
+        DgcMdc.remove(MDC_PROP_UPLOAD_CERT_THUMBPRINT);
+
+        return savedEntity;
+    }
+
+    /**
+     * Extracts the KID of a verification method from the {@code kid} property of its {@code publicKeyJwk}.
+     *
+     * @param verificationMethod the verification method
+     * @return the KID or {@code null} if the JWK does not contain a {@code kid}
+     * @throws SignerCertCheckException if the KID exceeds the maximum length of the KID column
+     */
+    private String resolveKid(TrustedUploadDidDocumentDto.VerificationMethod verificationMethod)
+        throws SignerCertCheckException {
+
+        TrustedUploadDidDocumentDto.PublicKeyJwk publicKeyJwk = verificationMethod.getPublicKeyJwk();
+        String kid = publicKeyJwk == null || publicKeyJwk.getKeyId() == null
+            ? null : publicKeyJwk.getKeyId().trim();
+
+        if (kid == null || kid.isEmpty()) {
+            return null;
+        }
+
+        if (kid.length() > MAX_KID_LENGTH) {
+            throw new SignerCertCheckException(SignerCertCheckException.Reason.KID_CHECK_FAILED,
+                "KID %s of verification method %s exceeds the maximum length of %d characters.",
+                kid, verificationMethod.getId(), MAX_KID_LENGTH);
+        }
+
+        return kid;
+    }
+
+    /**
+     * Ensures the KID of a certificate imported from a DID document is not used by any other certificate.
+     *
+     * <p>The entity with the same thumbprint is excluded, as it is replaced by the DID import.
+     *
+     * @param thumbprint the thumbprint of the imported certificate
+     * @param kid        the KID taken from the verification method, may be {@code null}
+     */
+    private void contentCheckDidKidAlreadyExists(String thumbprint, String kid) throws SignerCertCheckException {
+
+        String effectiveKid = kid != null ? kid : thumbprint.substring(0, 16);
+
+        if (signerInformationRepository.getFirstByThumbprintStartsWithAndThumbprintIsNot(effectiveKid, thumbprint)
+            .isPresent()) {
+            throw new SignerCertCheckException(SignerCertCheckException.Reason.KID_CHECK_FAILED,
+                "A certificate with KID %s already exists", effectiveKid);
+        }
+
+        Optional<SignerInformationEntity> kidOwner = signerInformationRepository.getFirstByKid(effectiveKid);
+
+        if (kidOwner.isPresent() && !thumbprint.equals(kidOwner.get().getThumbprint())) {
+            throw new SignerCertCheckException(SignerCertCheckException.Reason.KID_CHECK_FAILED,
+                "A certificate with KID %s already exists", effectiveKid);
+        }
+    }
+
+    /**
+     * Determines the entity a certificate imported from a DID document is written to.
+     *
+     * <ul>
+     *     <li>No entry with the thumbprint exists: a new entity is created.</li>
+     *     <li>An entry imported from a DID document exists: it is replaced in place and its version is increased.</li>
+     *     <li>An entry of any other source (e.g. CMS) exists: it is removed and a new DID entity is created.</li>
+     * </ul>
+     *
+     * @param thumbprint the thumbprint of the uploaded certificate
+     * @param countryCode the country authorized to upload the certificate
+     * @return the entity to populate and save
+     */
+    private SignerInformationEntity resolveDidTargetEntity(String thumbprint, String countryCode)
+            throws SignerCertCheckException {
+
+        Optional<SignerInformationEntity> existingEntity = signerInformationRepository.getFirstByThumbprint(thumbprint);
+
+        if (existingEntity.isEmpty()) {
+            return new SignerInformationEntity();
+        }
+
+        SignerInformationEntity existing = existingEntity.get();
+
+        if (!countryCode.equals(existing.getCountry())) {
+            throw new SignerCertCheckException(SignerCertCheckException.Reason.COUNTRY_OF_ORIGIN_CHECK_FAILED,
+                "Cannot replace a certificate belonging to country %s.", existing.getCountry());
+        }
+
+        if (existing.getSourceType() == SignerInformationEntity.SourceType.DID) {
+            existing.setVersion(existing.getVersion() == null ? 1 : existing.getVersion() + 1);
+            log.info("Replacing existing DID SignerInformation Entity {} (new version {})",
+                existing.getId(), existing.getVersion());
+            return existing;
+        }
+
+        log.info("Removing existing {} SignerInformation Entity {} to replace it with DID import",
+            existing.getSourceType(), existing.getId());
+
+        signerInformationRepository.delete(existing);
+        // Hibernate executes inserts before deletes, which would violate the unique thumbprint constraint
+        signerInformationRepository.flush();
+
+        return new SignerInformationEntity();
+    }
+
+    private String encodeDidDocumentAsSignature(TrustedUploadDidDocumentDto didDocument)
+        throws SignerCertCheckException {
+
+        try {
+            return Base64.getEncoder().encodeToString(
+                objectMapper.writeValueAsString(didDocument).getBytes(StandardCharsets.UTF_8));
+        } catch (JsonProcessingException e) {
+            throw new SignerCertCheckException(SignerCertCheckException.Reason.UPLOAD_FAILED,
+                "Failed to serialize uploaded DID document.");
+        }
+    }
+
+    private X509CertificateHolder parseCertificate(String encodedCertificate) throws SignerCertCheckException {
+        try {
+            return new X509CertificateHolder(Base64.getDecoder().decode(encodedCertificate));
+        } catch (IOException | IllegalArgumentException e) {
+            throw new SignerCertCheckException(SignerCertCheckException.Reason.UPLOAD_FAILED,
+                "Failed to parse certificate of x5c property: %s", e.getMessage());
+        }
+    }
+
+    private X509CertificateHolder getUploadCertificate(String countryCode) throws SignerCertCheckException {
+        return trustedPartyService.getCertificate(countryCode, TrustedPartyEntity.CertificateType.UPLOAD).stream()
+            .map(trustedPartyService::getX509CertificateHolderFromEntity)
+            .filter(Objects::nonNull)
+            .findFirst()
+            .orElseThrow(() -> new SignerCertCheckException(
+                SignerCertCheckException.Reason.UPLOADER_CERT_CHECK_FAILED,
+                "Could not find upload certificate for country %s", countryCode));
+    }
+
+    private String resolveParticipantCountryCode(TrustedUploadDidDocumentDto.VerificationMethod verificationMethod)
+        throws SignerCertCheckException {
+
+        String participantCode = stripDidFragmentPrefix(verificationMethod.getParticipant() == null
+            ? null : verificationMethod.getParticipant().getCode());
+
+        if (participantCode == null || participantCode.isBlank()) {
+            throw new SignerCertCheckException(SignerCertCheckException.Reason.COUNTRY_OF_ORIGIN_CHECK_FAILED,
+                "Verification method %s does not contain a participant code.", verificationMethod.getId());
+        }
+
+        return normalizeParticipantCountryCode(participantCode);
+    }
+
+    /**
+     * Resolves the domain of a verification method, e.g. {@code "#DCC"} becomes {@code "DCC"}.
+     *
+     * @return the domain without DID fragment prefix or {@code null} if the verification method does not define one
+     */
+    private String resolveDomain(TrustedUploadDidDocumentDto.VerificationMethod verificationMethod) {
+
+        String domain = stripDidFragmentPrefix(verificationMethod.getDomain() == null
+            ? null : verificationMethod.getDomain().getCode());
+
+        return domain == null || domain.isBlank() ? null : domain.toUpperCase(Locale.ROOT);
+    }
+
+    /**
+     * Resolves the key usage of a verification method, e.g. {@code "#CSCA"} becomes {@code "CSCA"}.
+     *
+     * @return the key usage without DID fragment prefix or {@code null} if the verification method does not define one
+     */
+    private String resolveKeyUsage(TrustedUploadDidDocumentDto.VerificationMethod verificationMethod) {
+
+        String keyUsage = stripDidFragmentPrefix(verificationMethod.getKeyUsage() == null
+            ? null : verificationMethod.getKeyUsage().getCode());
+
+        return keyUsage == null || keyUsage.isBlank() ? null : keyUsage.toUpperCase(Locale.ROOT);
+    }
+
+    /**
+     * Removes the leading DID fragment separator from a coded value.
+     *
+     * <p>TNG publishes the {@code domain}, {@code participant} and {@code keyusage} codes of a verification
+     * method as DID fragment references, e.g. {@code "#DCC"}, {@code "#AND"} or {@code "#CSCA"}. Only the plain
+     * code must be persisted.
+     *
+     * @param code the coded value as contained in the DID document, may be {@code null}
+     * @return the code without leading {@code #}, or {@code null} if the input was {@code null}
+     */
+    private String stripDidFragmentPrefix(String code) {
+
+        if (code == null) {
+            return null;
+        }
+
+        String strippedCode = code.trim();
+
+        return strippedCode.startsWith(DID_FRAGMENT_SEPARATOR) ? strippedCode.substring(1) : strippedCode;
+    }
+
+    private String convertAlpha3ToAlpha2(String alpha3) throws SignerCertCheckException {
+        Optional<String> virtualCountry = configProperties.getCountryCodeMap().getVirtualCountries().entrySet().stream()
+            .filter(entry -> alpha3.equalsIgnoreCase(entry.getValue()))
+            .map(Map.Entry::getKey)
+            .findFirst();
+
+        if (virtualCountry.isPresent()) {
+            return virtualCountry.get().toUpperCase(Locale.ROOT);
+        }
+
+        return Arrays.stream(Locale.getISOCountries())
+            .filter(alpha2 -> alpha3.equalsIgnoreCase(getIso3Country(alpha2)))
+            .findFirst()
+            .orElseThrow(() -> new SignerCertCheckException(
+                SignerCertCheckException.Reason.COUNTRY_OF_ORIGIN_CHECK_FAILED,
+                "Participant code %s could not be mapped to an ISO 3166 Alpha-2 country code.", alpha3));
+    }
+
+    private String getIso3Country(String alpha2) {
+        try {
+            return new Locale("en", alpha2).getISO3Country();
+        } catch (MissingResourceException e) {
+            return null;
+        }
     }
 
     /**
@@ -508,6 +1009,35 @@ public class SignerInformationService {
         }
     }
 
+    /**
+     * Checks whether the uploaded certificate conflicts with an existing entry.
+     *
+     * <p>An entry imported from a DID document by the same country is superseded by the CMS upload and returned
+     * so it can be replaced. Any other existing entry (CMS, federated or owned by another country) is a conflict.
+     *
+     * @return the DID entry to replace or empty if the certificate does not exist yet
+     */
+    private Optional<SignerInformationEntity> resolveSupersededDidEntity(
+        X509CertificateHolder uploadedCertificate, String authenticatedCountryCode) throws SignerCertCheckException {
+
+        Optional<SignerInformationEntity> existingEntity =
+            signerInformationRepository.getFirstByThumbprint(certificateUtils.getCertThumbprint(uploadedCertificate));
+
+        if (existingEntity.isEmpty()) {
+            return Optional.empty();
+        }
+
+        SignerInformationEntity existing = existingEntity.get();
+        if (existing.getSourceType() == SignerInformationEntity.SourceType.DID
+            && existing.getSourceGateway() == null
+            && authenticatedCountryCode.equals(existing.getCountry())) {
+            return existingEntity;
+        }
+
+        throw new SignerCertCheckException(SignerCertCheckException.Reason.ALREADY_EXIST_CHECK_FAILED,
+            "Uploaded certificate already exists");
+    }
+
     private void contentCheckKidAlreadyExists(X509CertificateHolder uploadedCertificate, String customKid)
         throws SignerCertCheckException {
         String uploadedCertificateThumbprint = certificateUtils.getCertThumbprint(uploadedCertificate);
@@ -527,7 +1057,9 @@ public class SignerInformationService {
 
         signerInformationEntity = signerInformationRepository.getFirstByKid(kid);
 
-        if (signerInformationEntity.isPresent()) {
+        // An entry of the same certificate is a superseded DID entry, which is replaced by this upload
+        if (signerInformationEntity.isPresent()
+            && !uploadedCertificateThumbprint.equals(signerInformationEntity.get().getThumbprint())) {
             throw new SignerCertCheckException(SignerCertCheckException.Reason.KID_CHECK_FAILED,
                 "A certificate with KID of uploaded certificate already exists");
         }

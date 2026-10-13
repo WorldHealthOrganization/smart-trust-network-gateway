@@ -22,4 +22,6 @@
     <include file="db/changelog/change-data-type-for-valuesets.xml"/>
     <include file="db/changelog/change-revocation-batch-value-type.xml"/>
     <include file="db/changelog/change-supported-length-of-domain.xml"/>
+    <include file="db/changelog/add-signer-information-source-type-column.xml"/>
+    <include file="db/changelog/change-signer-information-signature-to-text.xml"/>
 </databaseChangeLog>

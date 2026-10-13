@@ -136,7 +136,8 @@ class TrustListIntegrationTest {
             "sig1",
             null,
             SignerInformationEntity.CertificateType.DSC,
-            null
+            null,
+            SignerInformationEntity.SourceType.CMS
         ));
 
         signerInformationRepository.save(new SignerInformationEntity(
@@ -148,7 +149,8 @@ class TrustListIntegrationTest {
             "sig2",
             null,
             SignerInformationEntity.CertificateType.DSC,
-            null
+            null,
+            SignerInformationEntity.SourceType.CMS
         ));
 
         signerInformationRepository.save(new SignerInformationEntity(
@@ -160,7 +162,8 @@ class TrustListIntegrationTest {
             "sig3",
             null,
             SignerInformationEntity.CertificateType.CUSTOM,
-            null
+            null,
+            SignerInformationEntity.SourceType.CMS
         ));
 
         trustedIssuerRepository.saveAll(List.of(

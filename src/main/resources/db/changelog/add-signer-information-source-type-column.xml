@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.6.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="add-signer-information-source-type-column" author="who">
+        <addColumn tableName="signer_information">
+            <column name="source_type" type="varchar(20)" defaultValue="CMS"/>
+        </addColumn>
+        <update tableName="signer_information">
+            <column name="source_type" value="CMS"/>
+            <where>source_type IS NULL</where>
+        </update>
+        <addNotNullConstraint tableName="signer_information" columnName="source_type"
+                              columnDataType="varchar(20)" defaultNullValue="CMS"/>
+    </changeSet>
+</databaseChangeLog>
