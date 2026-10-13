@@ -162,6 +162,9 @@ public class SignerInformationService {
     /**
      * Adds a new Trusted Certificate to TrustStore DB.
      *
+     * <p>If the same certificate was previously imported from a DID document by the same country, the CMS upload
+     * supersedes it: the DID entry is removed and a new CMS entry is created.
+     *
      * @param uploadedCertificate      the certificate to add
      * @param signerCertificate        the certificate which was used to sign the message
      * @param signature                the detached signature of cms message
@@ -173,6 +176,7 @@ public class SignerInformationService {
      * @return created Entity
      * @throws SignerCertCheckException if something went wrong
      */
+    @Transactional(rollbackFor = SignerCertCheckException.class)
     public SignerInformationEntity addTrustedCertificate(
         X509CertificateHolder uploadedCertificate,
         X509CertificateHolder signerCertificate,
@@ -197,7 +201,8 @@ public class SignerInformationService {
             contentCheckOneOf(key, configProperties.getTrustedCertificates().getAllowedProperties());
         }
         contentCheckCsca(uploadedCertificate, authenticatedCountryCode, group);
-        contentCheckAlreadyExists(uploadedCertificate);
+        final Optional<SignerInformationEntity> supersededDidEntity =
+            resolveSupersededDidEntity(uploadedCertificate, authenticatedCountryCode);
         contentCheckKidAlreadyExists(uploadedCertificate, kid);
 
         // All checks passed --> Save to DB
@@ -225,6 +230,14 @@ public class SignerInformationService {
                 throw new SignerCertCheckException(SignerCertCheckException.Reason.PROPERTY_SERIALIZATION_FAILED,
                     "Failed to serialize properties.");
             }
+        }
+
+        if (supersededDidEntity.isPresent()) {
+            log.info("Removing existing DID SignerInformation Entity {} to replace it with CMS upload",
+                supersededDidEntity.get().getId());
+            signerInformationRepository.delete(supersededDidEntity.get());
+            // Hibernate executes inserts before deletes, which would violate the unique thumbprint constraint
+            signerInformationRepository.flush();
         }
 
         log.info("Saving new SignerInformation Entity");
@@ -301,6 +314,7 @@ public class SignerInformationService {
      * @throws SignerCertCheckException if validation check has failed. The exception contains
      *                                  a reason property with detailed information why the validation has failed.
      */
+    @Transactional(rollbackFor = SignerCertCheckException.class)
     public SignerInformationEntity addSignerCertificate(
         X509CertificateHolder uploadedCertificate,
         X509CertificateHolder signerCertificate,
@@ -371,60 +385,12 @@ public class SignerInformationService {
     }
 
     /**
-     * Returns the latest uploaded DID document for the given domain, participant and key usage.
-     *
-     * <p>All coded values may be provided with or without DID fragment prefix (e.g. {@code #DCC} or {@code DCC}).
-     * The participant may be an ISO 3166 Alpha-2 or Alpha-3 code. A stored document matches if it contains a
-     * verification method with the requested key usage and domain.
-     *
-     * @param domain      the domain, e.g. {@code DCC}
-     * @param participant the participant code, e.g. {@code DE} or {@code DEU}
-     * @param keyUsage    the key usage, e.g. {@code DSC} or {@code CSCA}
-     * @return the uploaded DID document as JSON string or empty if no matching document is stored
-     * @throws SignerCertCheckException if the participant code is not a valid country code
-     */
-    public Optional<String> getDidDocument(String domain, String participant, String keyUsage)
-        throws SignerCertCheckException {
-
-        String normalizedDomain = normalizeCode(domain);
-        String normalizedKeyUsage = normalizeCode(keyUsage);
-        String countryCode = toAlpha2CountryCode(normalizeCode(participant));
-
-        return signerInformationRepository
-            .getBySourceTypeAndDomainAndCountryAndSourceGatewayIsNullOrderByCreatedAtDesc(
-                SignerInformationEntity.SourceType.DID, normalizedDomain, countryCode)
-            .stream()
-            .map(SignerInformationEntity::getSignature)
-            .filter(Objects::nonNull)
-            .distinct()
-            .map(this::decodeDidDocument)
-            .filter(Objects::nonNull)
-            .filter(document -> containsVerificationMethod(document, normalizedDomain, normalizedKeyUsage))
-            .findFirst()
-            .map(this::toOrderedDidDocument);
-    }
-
-    /**
-     * Re-serializes a stored DID document through {@link TrustedUploadDidDocumentDto}, so the attributes are
-     * always returned in the order defined by its {@code @JsonPropertyOrder}, also for documents stored before
-     * the order was defined.
-     */
-    private String toOrderedDidDocument(String didDocument) {
-        try {
-            return objectMapper.writeValueAsString(
-                objectMapper.readValue(didDocument, TrustedUploadDidDocumentDto.class));
-        } catch (JsonProcessingException e) {
-            log.warn("Failed to re-serialize stored DID document, returning it unchanged: {}", e.getMessage());
-            return didDocument;
-        }
-    }
-
-    /**
      * Deletes all entries imported from uploaded DID documents for the given domain, participant and key usage.
      *
-     * <p>Every entry of the given domain and country whose stored DID document contains a verification method
-     * matching the requested domain and key usage is removed, i.e. all entries corresponding to the documents
-     * returned by {@link #getDidDocument(String, String, String)}.
+     * <p>All coded values may be provided with or without DID fragment prefix (e.g. {@code #DCC} or {@code DCC}).
+     * The participant may be an ISO 3166 Alpha-2 or Alpha-3 code. Every entry of the given domain and country
+     * whose stored DID document contains a verification method matching the requested domain and key usage is
+     * removed.
      *
      * @param domain      the domain, e.g. {@code DCC}
      * @param participant the participant code, e.g. {@code DE} or {@code DEU}
@@ -438,7 +404,7 @@ public class SignerInformationService {
 
         String normalizedDomain = normalizeCode(domain);
         String normalizedKeyUsage = normalizeCode(keyUsage);
-        String countryCode = toAlpha2CountryCode(normalizeCode(participant));
+        String countryCode = normalizeParticipantCountryCode(participant);
 
         List<SignerInformationEntity> entitiesToDelete = signerInformationRepository
             .getBySourceTypeAndDomainAndCountryAndSourceGatewayIsNullOrderByCreatedAtDesc(
@@ -493,6 +459,17 @@ public class SignerInformationService {
     private String normalizeCode(String code) {
         String strippedCode = stripDidFragmentPrefix(code);
         return strippedCode == null ? "" : strippedCode.toUpperCase(Locale.ROOT);
+    }
+
+    /**
+     * Normalizes a DID participant to its Alpha-2 country, including fragment prefixes and virtual countries.
+     *
+     * @param participant the Alpha-2 or Alpha-3 participant code
+     * @return the normalized Alpha-2 country code
+     * @throws SignerCertCheckException if the participant cannot be mapped to a country code
+     */
+    public String normalizeParticipantCountryCode(String participant) throws SignerCertCheckException {
+        return toAlpha2CountryCode(normalizeCode(participant));
     }
 
     private String toAlpha2CountryCode(String participantCode) throws SignerCertCheckException {
@@ -574,7 +551,7 @@ public class SignerInformationService {
         contentCheckForThreats(uploadedCertificate);
         contentCheckUploaderCertificate(signerCertificate, countryCode);
 
-        SignerInformationEntity signerInformation = resolveDidTargetEntity(thumbprint);
+        SignerInformationEntity signerInformation = resolveDidTargetEntity(thumbprint, countryCode);
 
         contentCheckDidKidAlreadyExists(thumbprint, kid);
 
@@ -664,9 +641,11 @@ public class SignerInformationService {
      * </ul>
      *
      * @param thumbprint the thumbprint of the uploaded certificate
+     * @param countryCode the country authorized to upload the certificate
      * @return the entity to populate and save
      */
-    private SignerInformationEntity resolveDidTargetEntity(String thumbprint) {
+    private SignerInformationEntity resolveDidTargetEntity(String thumbprint, String countryCode)
+            throws SignerCertCheckException {
 
         Optional<SignerInformationEntity> existingEntity = signerInformationRepository.getFirstByThumbprint(thumbprint);
 
@@ -675,6 +654,11 @@ public class SignerInformationService {
         }
 
         SignerInformationEntity existing = existingEntity.get();
+
+        if (!countryCode.equals(existing.getCountry())) {
+            throw new SignerCertCheckException(SignerCertCheckException.Reason.COUNTRY_OF_ORIGIN_CHECK_FAILED,
+                "Cannot replace a certificate belonging to country %s.", existing.getCountry());
+        }
 
         if (existing.getSourceType() == SignerInformationEntity.SourceType.DID) {
             existing.setVersion(existing.getVersion() == null ? 1 : existing.getVersion() + 1);
@@ -735,7 +719,7 @@ public class SignerInformationService {
                 "Verification method %s does not contain a participant code.", verificationMethod.getId());
         }
 
-        return toAlpha2CountryCode(participantCode.toUpperCase(Locale.ROOT));
+        return normalizeParticipantCountryCode(participantCode);
     }
 
     /**
@@ -1025,6 +1009,35 @@ public class SignerInformationService {
         }
     }
 
+    /**
+     * Checks whether the uploaded certificate conflicts with an existing entry.
+     *
+     * <p>An entry imported from a DID document by the same country is superseded by the CMS upload and returned
+     * so it can be replaced. Any other existing entry (CMS, federated or owned by another country) is a conflict.
+     *
+     * @return the DID entry to replace or empty if the certificate does not exist yet
+     */
+    private Optional<SignerInformationEntity> resolveSupersededDidEntity(
+        X509CertificateHolder uploadedCertificate, String authenticatedCountryCode) throws SignerCertCheckException {
+
+        Optional<SignerInformationEntity> existingEntity =
+            signerInformationRepository.getFirstByThumbprint(certificateUtils.getCertThumbprint(uploadedCertificate));
+
+        if (existingEntity.isEmpty()) {
+            return Optional.empty();
+        }
+
+        SignerInformationEntity existing = existingEntity.get();
+        if (existing.getSourceType() == SignerInformationEntity.SourceType.DID
+            && existing.getSourceGateway() == null
+            && authenticatedCountryCode.equals(existing.getCountry())) {
+            return existingEntity;
+        }
+
+        throw new SignerCertCheckException(SignerCertCheckException.Reason.ALREADY_EXIST_CHECK_FAILED,
+            "Uploaded certificate already exists");
+    }
+
     private void contentCheckKidAlreadyExists(X509CertificateHolder uploadedCertificate, String customKid)
         throws SignerCertCheckException {
         String uploadedCertificateThumbprint = certificateUtils.getCertThumbprint(uploadedCertificate);
@@ -1044,7 +1057,9 @@ public class SignerInformationService {
 
         signerInformationEntity = signerInformationRepository.getFirstByKid(kid);
 
-        if (signerInformationEntity.isPresent()) {
+        // An entry of the same certificate is a superseded DID entry, which is replaced by this upload
+        if (signerInformationEntity.isPresent()
+            && !uploadedCertificateThumbprint.equals(signerInformationEntity.get().getThumbprint())) {
             throw new SignerCertCheckException(SignerCertCheckException.Reason.KID_CHECK_FAILED,
                 "A certificate with KID of uploaded certificate already exists");
         }

@@ -33,6 +33,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
+import java.util.Base64;
 import java.util.Optional;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.junit.jupiter.api.AfterEach;
@@ -169,6 +170,77 @@ class SignerInformationServiceTest {
         }
 
         Assertions.assertEquals(signerInformationEntitiesInDb + 1, signerInformationRepository.count());
+    }
+
+    @Test
+    void testCmsUploadSupersedesDidEntryOfSameCountry() throws Exception {
+        X509Certificate signerCertificate =
+            trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.UPLOAD, countryCode);
+        X509Certificate payloadCertificate = generatePayloadCertificate();
+        String thumbprint = certificateUtils.getCertThumbprint(payloadCertificate);
+
+        // KID equals the default CMS KID to ensure the superseded entry does not cause a KID conflict
+        SignerInformationEntity didEntity = saveDidEntity(payloadCertificate, countryCode, thumbprint.substring(0, 16));
+
+        SignerInformationEntity cmsEntity = signerInformationService.addSignerCertificate(
+            new X509CertificateHolder(payloadCertificate.getEncoded()),
+            new X509CertificateHolder(signerCertificate.getEncoded()),
+            dummySignature,
+            countryCode
+        );
+
+        Assertions.assertEquals(1, signerInformationRepository.count(), "DID entry must be replaced, not duplicated.");
+        Assertions.assertFalse(signerInformationRepository.findById(didEntity.getId()).isPresent());
+        SignerInformationEntity stored = signerInformationRepository.getFirstByThumbprint(thumbprint).orElseThrow();
+        Assertions.assertEquals(cmsEntity.getId(), stored.getId());
+        Assertions.assertEquals(SignerInformationEntity.SourceType.CMS, stored.getSourceType());
+        Assertions.assertEquals(dummySignature, stored.getSignature());
+    }
+
+    @Test
+    void testCmsUploadDoesNotSupersedeDidEntryOfAnotherCountry() throws Exception {
+        X509Certificate signerCertificate =
+            trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.UPLOAD, countryCode);
+        X509Certificate payloadCertificate = generatePayloadCertificate();
+
+        SignerInformationEntity didEntity = saveDidEntity(payloadCertificate, "XX", "didKid");
+
+        SignerInformationService.SignerCertCheckException e = Assertions.assertThrows(
+            SignerInformationService.SignerCertCheckException.class,
+            () -> signerInformationService.addSignerCertificate(
+                new X509CertificateHolder(payloadCertificate.getEncoded()),
+                new X509CertificateHolder(signerCertificate.getEncoded()),
+                dummySignature,
+                countryCode));
+
+        Assertions.assertEquals(SignerInformationService.SignerCertCheckException.Reason.ALREADY_EXIST_CHECK_FAILED,
+            e.getReason());
+        SignerInformationEntity stored = signerInformationRepository.findById(didEntity.getId()).orElseThrow();
+        Assertions.assertEquals(SignerInformationEntity.SourceType.DID, stored.getSourceType());
+        Assertions.assertEquals(1, signerInformationRepository.count());
+    }
+
+    private X509Certificate generatePayloadCertificate() throws Exception {
+        X509Certificate cscaCertificate =
+            trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.CSCA, countryCode);
+        PrivateKey cscaPrivateKey =
+            trustedPartyTestHelper.getPrivateKey(TrustedPartyEntity.CertificateType.CSCA, countryCode);
+        KeyPair payloadKeyPair = KeyPairGenerator.getInstance("ec").generateKeyPair();
+        return CertificateTestUtils.generateCertificate(payloadKeyPair, countryCode, "Payload Cert", cscaCertificate,
+            cscaPrivateKey);
+    }
+
+    private SignerInformationEntity saveDidEntity(X509Certificate certificate, String country, String kid)
+        throws Exception {
+        SignerInformationEntity didEntity = new SignerInformationEntity();
+        didEntity.setCountry(country);
+        didEntity.setRawData(Base64.getEncoder().encodeToString(certificate.getEncoded()));
+        didEntity.setThumbprint(certificateUtils.getCertThumbprint(certificate));
+        didEntity.setCertificateType(SignerInformationEntity.CertificateType.DSC);
+        didEntity.setSignature("did-signature");
+        didEntity.setKid(kid);
+        didEntity.setSourceType(SignerInformationEntity.SourceType.DID);
+        return signerInformationRepository.save(didEntity);
     }
 
     @Test
