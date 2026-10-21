@@ -45,6 +45,8 @@ class TrustedDidUploadMediaTypeIntegrationTest {
 
     private static final String AUTH_COUNTRY = "EU";
 
+    private static final String UPLOAD_PATH = "/trusted-did/DCC/EU/DSC";
+
     private static final String DID_DOCUMENT = DidTestHelper.buildUploadDidDocument();
 
     @MockBean
@@ -63,7 +65,7 @@ class TrustedDidUploadMediaTypeIntegrationTest {
     void testUploadAcceptsDidLdJsonContentType() throws Exception {
         mockResolutionFailure();
 
-        mockMvc.perform(authenticated(put("/trusted-did"))
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did+ld+json"))
                 .content(DID_DOCUMENT))
             .andExpect(status().isNotFound());
@@ -73,7 +75,7 @@ class TrustedDidUploadMediaTypeIntegrationTest {
     void testUploadAcceptsDidContentType() throws Exception {
         mockResolutionFailure();
 
-        mockMvc.perform(authenticated(put("/trusted-did"))
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(DID_DOCUMENT))
             .andExpect(status().isNotFound());

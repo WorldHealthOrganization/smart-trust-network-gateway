@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -49,6 +50,7 @@ import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -385,36 +387,43 @@ public class SignerInformationService {
     }
 
     /**
-     * Deletes all entries imported from uploaded DID documents for the given domain, participant and key usage.
+     * Deletes the entries imported from uploaded DID documents for the given domain, participant and key usage
+     * whose certificate is contained in the {@code x5c} property of a verification method of the given document.
      *
      * <p>All coded values may be provided with or without DID fragment prefix (e.g. {@code #DCC} or {@code DCC}).
-     * The participant may be an ISO 3166 Alpha-2 or Alpha-3 code. Every entry of the given domain and country
-     * whose stored DID document contains a verification method matching the requested domain and key usage is
-     * removed.
+     * The participant may be an ISO 3166 Alpha-2 or Alpha-3 code. Only entries of the given domain and country
+     * whose stored DID document contains a verification method matching the requested domain and key usage and
+     * whose thumbprint matches one of the submitted {@code x5c} certificates are removed; all other entries are
+     * kept (partial deletion).
      *
      * @param domain      the domain, e.g. {@code DCC}
      * @param participant the participant code, e.g. {@code DE} or {@code DEU}
      * @param keyUsage    the key usage, e.g. {@code DSC} or {@code CSCA}
+     * @param didDocument the DID document listing the certificates to delete
      * @return the number of deleted entries
-     * @throws SignerCertCheckException if the participant code is not a valid country code
+     * @throws SignerCertCheckException if the participant code is not a valid country code or the document does
+     *                                  not contain any parsable {@code x5c} certificate
      */
     @Transactional(rollbackFor = SignerCertCheckException.class)
-    public int deleteDidSignerCertificates(String domain, String participant, String keyUsage)
+    public int deleteDidSignerCertificates(String domain, String participant, String keyUsage,
+                                           TrustedUploadDidDocumentDto didDocument)
         throws SignerCertCheckException {
 
         String normalizedDomain = normalizeCode(domain);
         String normalizedKeyUsage = normalizeCode(keyUsage);
         String countryCode = normalizeParticipantCountryCode(participant);
+        Set<String> thumbprintsToDelete = getX5cThumbprints(didDocument);
 
         List<SignerInformationEntity> entitiesToDelete = signerInformationRepository
             .getBySourceTypeAndDomainAndCountryAndSourceGatewayIsNullOrderByCreatedAtDesc(
                 SignerInformationEntity.SourceType.DID, normalizedDomain, countryCode)
             .stream()
+            .filter(entity -> thumbprintsToDelete.contains(entity.getThumbprint()))
             .filter(entity -> entity.getSignature() != null)
             .filter(entity -> {
-                String didDocument = decodeDidDocument(entity.getSignature());
-                return didDocument != null
-                    && containsVerificationMethod(didDocument, normalizedDomain, normalizedKeyUsage);
+                String storedDidDocument = decodeDidDocument(entity.getSignature());
+                return storedDidDocument != null
+                    && containsVerificationMethod(storedDidDocument, normalizedDomain, normalizedKeyUsage);
             })
             .toList();
 
@@ -425,6 +434,33 @@ public class SignerInformationService {
         signerInformationRepository.deleteAll(entitiesToDelete);
 
         return entitiesToDelete.size();
+    }
+
+    /**
+     * Collects the thumbprints of all {@code x5c} certificates of all verification methods of a DID document.
+     */
+    private Set<String> getX5cThumbprints(TrustedUploadDidDocumentDto didDocument) throws SignerCertCheckException {
+        Set<String> thumbprints = new HashSet<>();
+
+        if (didDocument != null && didDocument.getVerificationMethod() != null) {
+            for (TrustedUploadDidDocumentDto.VerificationMethod verificationMethod
+                : didDocument.getVerificationMethod()) {
+                TrustedUploadDidDocumentDto.PublicKeyJwk publicKeyJwk = verificationMethod.getPublicKeyJwk();
+                if (publicKeyJwk == null || publicKeyJwk.getEncodedX509Certificates() == null) {
+                    continue;
+                }
+                for (String encodedCertificate : publicKeyJwk.getEncodedX509Certificates()) {
+                    thumbprints.add(certificateUtils.getCertThumbprint(parseCertificate(encodedCertificate)));
+                }
+            }
+        }
+
+        if (thumbprints.isEmpty()) {
+            throw new SignerCertCheckException(SignerCertCheckException.Reason.UPLOAD_FAILED,
+                "The DID document does not contain any x5c certificate to delete.");
+        }
+
+        return thumbprints;
     }
 
     private String decodeDidDocument(String signature) {

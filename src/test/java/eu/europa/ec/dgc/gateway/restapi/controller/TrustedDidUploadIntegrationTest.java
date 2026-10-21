@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -39,10 +40,13 @@ import eu.europa.ec.dgc.did.model.VerificationMethod;
 import eu.europa.ec.dgc.gateway.client.cloudmersive.CloudmersiveClient;
 import eu.europa.ec.dgc.gateway.config.DgcConfigProperties;
 import eu.europa.ec.dgc.gateway.config.ErrorHandler;
+import eu.europa.ec.dgc.gateway.entity.AuditEventEntity;
 import eu.europa.ec.dgc.gateway.entity.SignerInformationEntity;
 import eu.europa.ec.dgc.gateway.entity.TrustedPartyEntity;
 import eu.europa.ec.dgc.gateway.model.CloudmersiveThreatDetectionResponse;
+import eu.europa.ec.dgc.gateway.repository.AuditEventRepository;
 import eu.europa.ec.dgc.gateway.repository.SignerInformationRepository;
+import eu.europa.ec.dgc.gateway.restapi.filter.CertificateAuthenticationFilter;
 import eu.europa.ec.dgc.gateway.testdata.CertificateTestUtils;
 import eu.europa.ec.dgc.gateway.testdata.DidTestHelper;
 import eu.europa.ec.dgc.gateway.testdata.TrustedPartyTestHelper;
@@ -79,6 +83,7 @@ class TrustedDidUploadIntegrationTest {
     private static final String DID = DidTestHelper.DID;
     private static final String VERIFICATION_METHOD = DidTestHelper.VERIFICATION_METHOD;
     private static final String COUNTRY = "DE";
+    private static final String UPLOAD_PATH = "/trusted-did/DCC/DE/DSC";
     private static final String UPLOADED_KID = "jwk-kid-1";
 
     private static final String TNG_PROOF_VERIFICATION_METHOD =
@@ -111,6 +116,9 @@ class TrustedDidUploadIntegrationTest {
     SignerInformationRepository signerInformationRepository;
 
     @Autowired
+    AuditEventRepository auditEventRepository;
+
+    @Autowired
     TrustedPartyTestHelper trustedPartyTestHelper;
 
     @Autowired
@@ -132,7 +140,11 @@ class TrustedDidUploadIntegrationTest {
         signerInformationRepository.deleteAll();
         uploadedKid = UPLOADED_KID;
         authenticatedCountry = COUNTRY;
+        // The standalone setup bypasses the authentication filter; only the thumbprint is provided so the
+        // country attribute stays absent for the local override scenarios.
         localMockMvc = MockMvcBuilders.standaloneSetup(trustedDidController)
+            .defaultRequest(get("/").requestAttr(CertificateAuthenticationFilter.REQUEST_PROP_THUMBPRINT,
+                trustedPartyTestHelper.getHash(TrustedPartyEntity.CertificateType.AUTHENTICATION, COUNTRY)))
             .setControllerAdvice(new ErrorHandler()).build();
 
         CloudmersiveThreatDetectionResponse threatResponse = new CloudmersiveThreatDetectionResponse();
@@ -160,14 +172,12 @@ class TrustedDidUploadIntegrationTest {
         Assertions.assertTrue(dgcConfigProperties.getTrustedDid().isEnforceCountryOwnership());
         String document = buildUploadDidDocument(encodedUploadedCertificate, "\"participant\": {\"code\": \"DE\"},");
 
-        for (String path : List.of("/trusted-did", "/trusted-did/DCC/DE/DSC")) {
-            localMockMvc.perform(put(path)
-                    .contentType(MediaType.valueOf("application/did+ld+json"))
-                    .content(document))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("0x400"));
-        }
-        localMockMvc.perform(delete("/trusted-did/DCC/DE/DSC"))
+        localMockMvc.perform(put(UPLOAD_PATH)
+                .contentType(MediaType.valueOf("application/did+ld+json"))
+                .content(document))
+            .andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.code").value("0x400"));
+        localMockMvc.perform(deleteWithDocument("/trusted-did/DCC/DE/DSC"))
             .andExpect(status().isUnauthorized());
         Assertions.assertTrue(signerInformationRepository.findAll().isEmpty());
     }
@@ -177,7 +187,7 @@ class TrustedDidUploadIntegrationTest {
         dgcConfigProperties.getTrustedDid().setEnforceCountryOwnership(false);
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
 
-        localMockMvc.perform(put("/trusted-did")
+        localMockMvc.perform(put(UPLOAD_PATH)
                 .contentType(MediaType.valueOf("application/did+ld+json"))
                 .content(buildUploadDidDocument(encodedUploadedCertificate,
                     "\"domain\": {\"code\": \"DCC\"}, \"participant\": {\"code\": \"DE\"},"
@@ -192,7 +202,7 @@ class TrustedDidUploadIntegrationTest {
             .andExpect(jsonPath("$.stored").value(true));
 
         Assertions.assertEquals(1, signerInformationRepository.findAll().size());
-        localMockMvc.perform(delete("/trusted-did/DCC/DE/DSC")).andExpect(status().isNoContent());
+        localMockMvc.perform(deleteWithDocument("/trusted-did/DCC/DE/DSC")).andExpect(status().isNoContent());
         Assertions.assertTrue(signerInformationRepository.findAll().isEmpty());
     }
 
@@ -210,7 +220,7 @@ class TrustedDidUploadIntegrationTest {
         Assertions.assertTrue(signerInformationRepository.findAll().isEmpty());
 
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
-        localMockMvc.perform(put("/trusted-did")
+        localMockMvc.perform(put("/trusted-did/DCC/XY/DSC")
                 .contentType(MediaType.valueOf("application/did+ld+json"))
                 .content(document))
             .andExpect(status().isBadRequest());
@@ -228,7 +238,7 @@ class TrustedDidUploadIntegrationTest {
                 .content(buildUploadDidDocument(encodedUploadedCertificate, "")))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.stored").value(true));
-        mockMvc.perform(authenticated(delete("/trusted-did/DCC/DE/DSC"))).andExpect(status().isNoContent());
+        mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/DCC/DE/DSC"))).andExpect(status().isNoContent());
         Assertions.assertTrue(signerInformationRepository.findAll().isEmpty());
     }
 
@@ -236,7 +246,7 @@ class TrustedDidUploadIntegrationTest {
     void testVerifiedDidDocumentIsStoredAsSignerInformation() throws Exception {
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
 
-        mockMvc.perform(authenticated(put("/trusted-did"))
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(buildUploadDidDocument(encodedUploadedCertificate, "\"participant\": {\"code\": \"DE\"},")))
             .andExpect(status().isOk())
@@ -274,7 +284,7 @@ class TrustedDidUploadIntegrationTest {
     void testUnverifiedDidDocumentIsNotStored() throws Exception {
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(false);
 
-        mockMvc.perform(authenticated(put("/trusted-did"))
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(buildUploadDidDocument(encodedUploadedCertificate, "\"participant\": {\"code\": \"DE\"},")))
             .andExpect(status().isOk())
@@ -288,16 +298,16 @@ class TrustedDidUploadIntegrationTest {
     }
 
     @Test
-    void testDidDocumentWithoutParticipantCodeIsRejected() throws Exception {
+    void testUploadWithoutPathVariablesIsNotSupported() throws Exception {
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
 
         mockMvc.perform(authenticated(put("/trusted-did"))
                 .contentType(MediaType.valueOf("application/did"))
-                .content(buildUploadDidDocument(encodedUploadedCertificate, "")))
-            .andExpect(status().isBadRequest());
+                .content(buildUploadDidDocument(encodedUploadedCertificate, "\"participant\": {\"code\": \"DE\"},")))
+            .andExpect(status().is4xxClientError());
 
         Assertions.assertTrue(signerInformationRepository.findAll().isEmpty(),
-            "Nothing must be stored when the participant code is missing.");
+            "Nothing must be stored via the removed upload endpoint.");
     }
 
     @Test
@@ -305,7 +315,7 @@ class TrustedDidUploadIntegrationTest {
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
         authenticatedCountry = "XY";
 
-        mockMvc.perform(authenticated(put("/trusted-did"))
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(buildUploadDidDocument(encodedUploadedCertificate, "\"participant\": {\"code\": \"XY\"},")))
             .andExpect(status().isBadRequest());
@@ -320,7 +330,7 @@ class TrustedDidUploadIntegrationTest {
         trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.UPLOAD, "XA");
         authenticatedCountry = "XA";
 
-        mockMvc.perform(authenticated(put("/trusted-did"))
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(buildUploadDidDocument(encodedUploadedCertificate, "\"participant\": {\"code\": \"XXA\"},")))
             .andExpect(status().isOk())
@@ -340,7 +350,7 @@ class TrustedDidUploadIntegrationTest {
         authenticatedCountry = "XA";
 
         // TNG publishes the participant code as DID fragment reference, e.g. "#XXA"
-        mockMvc.perform(authenticated(put("/trusted-did"))
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(buildUploadDidDocument(encodedUploadedCertificate, "\"participant\": {\"code\": \"#XXA\"},")))
             .andExpect(status().isOk())
@@ -355,7 +365,7 @@ class TrustedDidUploadIntegrationTest {
     void testFragmentPrefixedAlpha2ParticipantCodeIsAccepted() throws Exception {
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
 
-        mockMvc.perform(authenticated(put("/trusted-did"))
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(buildUploadDidDocument(encodedUploadedCertificate, "\"participant\": {\"code\": \"#DE\"},")))
             .andExpect(status().isOk())
@@ -379,7 +389,7 @@ class TrustedDidUploadIntegrationTest {
             "keyusage": {"code": "#CSCA"},
             """;
 
-        mockMvc.perform(authenticated(put("/trusted-did"))
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(buildUploadDidDocument(encodedUploadedCertificate, codedValues)))
             .andExpect(status().isOk())
@@ -460,7 +470,7 @@ class TrustedDidUploadIntegrationTest {
         // First attempt with a proof which cannot be verified must leave the database untouched
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(false);
 
-        mockMvc.perform(authenticated(put("/trusted-did"))
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(document))
             .andExpect(status().isOk())
@@ -472,7 +482,7 @@ class TrustedDidUploadIntegrationTest {
         // The very same document is stored as soon as the proof verifies
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
 
-        mockMvc.perform(authenticated(put("/trusted-did"))
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(document))
             .andExpect(status().isOk())
@@ -487,7 +497,7 @@ class TrustedDidUploadIntegrationTest {
     void testExistingDidCertificateIsReplaced() throws Exception {
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
 
-        mockMvc.perform(authenticated(put("/trusted-did"))
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(buildUploadDidDocument(encodedUploadedCertificate,
                     "\"domain\": {\"code\": \"#DCC\"}, \"participant\": {\"code\": \"DE\"},")))
@@ -498,7 +508,7 @@ class TrustedDidUploadIntegrationTest {
         ZonedDateTime firstCreatedAt = first.getCreatedAt();
         Thread.sleep(10);
 
-        mockMvc.perform(authenticated(put("/trusted-did"))
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(buildUploadDidDocument(encodedUploadedCertificate,
                     "\"domain\": {\"code\": \"#DDCC\"}, \"participant\": {\"code\": \"DE\"},")))
@@ -533,7 +543,7 @@ class TrustedDidUploadIntegrationTest {
         cmsEntity.setSourceType(SignerInformationEntity.SourceType.CMS);
         cmsEntity = signerInformationRepository.save(cmsEntity);
 
-        mockMvc.perform(authenticated(put("/trusted-did"))
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(buildUploadDidDocument(encodedUploadedCertificate,
                     "\"domain\": {\"code\": \"#DDCC\"}, \"participant\": {\"code\": \"DE\"},")))
@@ -574,7 +584,7 @@ class TrustedDidUploadIntegrationTest {
 
         String didDocument = readResource("did/tng-multi-verification-method-did.json");
 
-        mockMvc.perform(authenticated(put("/trusted-did"))
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(didDocument))
             .andExpect(status().isOk())
@@ -620,7 +630,7 @@ class TrustedDidUploadIntegrationTest {
         String didDocument = readResource("did/tng-multi-verification-method-did.json");
 
         for (int i = 0; i < 2; i++) {
-            mockMvc.perform(authenticated(put("/trusted-did"))
+            mockMvc.perform(authenticated(put(UPLOAD_PATH))
                     .contentType(MediaType.valueOf("application/did"))
                     .content(didDocument))
                 .andExpect(status().isOk())
@@ -651,7 +661,7 @@ class TrustedDidUploadIntegrationTest {
         otherEntity.setDomain("DCC");
         signerInformationRepository.save(otherEntity);
 
-        mockMvc.perform(authenticated(put("/trusted-did"))
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(buildUploadDidDocument(encodedUploadedCertificate, "\"participant\": {\"code\": \"DE\"},")))
             .andExpect(status().isBadRequest())
@@ -664,7 +674,7 @@ class TrustedDidUploadIntegrationTest {
     void testDidWithoutJwkKidIsStoredWithoutKid() throws Exception {
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
 
-        mockMvc.perform(authenticated(put("/trusted-did"))
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(buildUploadDidDocument(encodedUploadedCertificate, "\"participant\": {\"code\": \"DE\"},")
                     .replace("\"kid\": \"" + UPLOADED_KID + "\",", "")))
@@ -681,7 +691,7 @@ class TrustedDidUploadIntegrationTest {
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
         uploadedKid = "k".repeat(21);
 
-        mockMvc.perform(authenticated(put("/trusted-did"))
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(buildUploadDidDocument(encodedUploadedCertificate, "\"participant\": {\"code\": \"DE\"},")))
             .andExpect(status().isBadRequest())
@@ -694,7 +704,7 @@ class TrustedDidUploadIntegrationTest {
     void testCaCertificateAsFirstX5cEntryIsRejected() throws Exception {
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
 
-        mockMvc.perform(authenticated(put("/trusted-did"))
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(buildUploadDidDocument(TNG_CSCA, "\"participant\": {\"code\": \"DE\"},")))
             .andExpect(status().isBadRequest())
@@ -710,7 +720,7 @@ class TrustedDidUploadIntegrationTest {
         X509Certificate otherCertificate =
             CertificateTestUtils.generateCertificate(DidTestHelper.generateEcKeyPair(), COUNTRY, "Other DSC");
 
-        mockMvc.perform(authenticated(put("/trusted-did"))
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(buildUploadDidDocument(Base64.getEncoder().encodeToString(otherCertificate.getEncoded()),
                     "\"participant\": {\"code\": \"DE\"},")))
@@ -721,35 +731,136 @@ class TrustedDidUploadIntegrationTest {
     }
 
     @Test
-    void testDeleteTrustedDidRemovesAllMatchingEntries() throws Exception {
+    void testDeleteTrustedDidRemovesOnlyCertificatesListedInX5c() throws Exception {
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
         trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.UPLOAD, "XA");
         authenticatedCountry = "XA";
+        String firstCertificate = encodedUploadedCertificate;
 
         mockMvc.perform(authenticated(put("/trusted-did/DDCC/XXA/CSCA"))
                 .contentType(MediaType.valueOf("application/did"))
-                .content(buildUploadDidDocument(encodedUploadedCertificate, "")))
+                .content(buildUploadDidDocument(firstCertificate, "")))
             .andExpect(status().isOk());
 
         // Second upload with a different certificate for the same domain, country and type
         KeyPair secondKeyPair = DidTestHelper.generateEcKeyPair();
         uploadedPublicKey = (ECPublicKey) secondKeyPair.getPublic();
-        encodedUploadedCertificate = Base64.getEncoder().encodeToString(
+        String secondCertificate = Base64.getEncoder().encodeToString(
             CertificateTestUtils.generateCertificate(secondKeyPair, COUNTRY, "Second DSC").getEncoded());
+        encodedUploadedCertificate = secondCertificate;
 
         uploadedKid = "jwk-kid-2";
 
         mockMvc.perform(authenticated(put("/trusted-did/DDCC/XXA/CSCA"))
                 .contentType(MediaType.valueOf("application/did"))
-                .content(buildUploadDidDocument(encodedUploadedCertificate, "")))
+                .content(buildUploadDidDocument(secondCertificate, "")))
             .andExpect(status().isOk());
         Assertions.assertEquals(2, signerInformationRepository.findAll().size());
 
-        mockMvc.perform(authenticated(delete("/trusted-did/ddcc/xxa/csca"))).andExpect(status().isNoContent());
+        // Only the certificate listed in the x5c of the submitted document is deleted
+        mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/ddcc/xxa/csca")))
+            .andExpect(status().isNoContent());
+        List<SignerInformationEntity> remaining = signerInformationRepository.findAll();
+        Assertions.assertEquals(1, remaining.size(), "Only the x5c certificate of the document must be deleted.");
+        Assertions.assertEquals(firstCertificate, remaining.get(0).getRawData());
 
-        Assertions.assertTrue(signerInformationRepository.findAll().isEmpty(),
-            "All entries matching the path variables must be deleted.");
-        mockMvc.perform(authenticated(delete("/trusted-did/DDCC/XXA/CSCA"))).andExpect(status().isNotFound());
+        mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/DDCC/XXA/CSCA")))
+            .andExpect(status().isNotFound());
+        Assertions.assertEquals(1, signerInformationRepository.findAll().size());
+
+        // Every x5c entry of the document is considered
+        encodedUploadedCertificate = secondCertificate + "\", \"" + firstCertificate;
+        mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/DDCC/XXA/CSCA")))
+            .andExpect(status().isNoContent());
+        Assertions.assertTrue(signerInformationRepository.findAll().isEmpty());
+    }
+
+    @Test
+    void testDeleteWithoutX5cCertificatesIsRejected() throws Exception {
+        when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
+                .contentType(MediaType.valueOf("application/did"))
+                .content(buildUploadDidDocument(encodedUploadedCertificate, "")))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(authenticated(delete(UPLOAD_PATH))
+                .contentType(MediaType.valueOf("application/did"))
+                .content(buildUploadDidDocument("", "")))
+            .andExpect(status().isBadRequest());
+        Assertions.assertEquals(1, signerInformationRepository.findAll().size());
+    }
+
+    @Test
+    void testDeleteRequiresVerifiedDidDocument() throws Exception {
+        when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
+                .contentType(MediaType.valueOf("application/did"))
+                .content(buildUploadDidDocument(encodedUploadedCertificate, "")))
+            .andExpect(status().isOk());
+        Assertions.assertEquals(1, signerInformationRepository.findAll().size());
+
+        mockMvc.perform(authenticated(delete(UPLOAD_PATH))).andExpect(status().is4xxClientError());
+        Assertions.assertEquals(1, signerInformationRepository.findAll().size(),
+            "Nothing must be deleted without a DID document.");
+
+        when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(false);
+        mockMvc.perform(authenticated(deleteWithDocument(UPLOAD_PATH)))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.code").value("0x307"));
+        Assertions.assertEquals(1, signerInformationRepository.findAll().size(),
+            "Nothing must be deleted when the proof is not verified.");
+
+        when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
+        mockMvc.perform(authenticated(deleteWithDocument(UPLOAD_PATH))).andExpect(status().isNoContent());
+        Assertions.assertTrue(signerInformationRepository.findAll().isEmpty());
+    }
+
+    @Test
+    void testTrustedDidOperationsAreAuditedWithoutSensitiveData() throws Exception {
+        auditEventRepository.deleteAll();
+        when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
+        String authThumbprint = trustedPartyTestHelper.getHash(
+            TrustedPartyEntity.CertificateType.AUTHENTICATION, authenticatedCountry);
+
+        mockMvc.perform(authenticated(put("/trusted-did/DCC/DE/DSC"))
+                .contentType(MediaType.valueOf("application/did"))
+                .content(buildUploadDidDocument(encodedUploadedCertificate, "")))
+            .andExpect(status().isOk());
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
+                .contentType(MediaType.valueOf("application/did"))
+                .content(buildUploadDidDocument(encodedUploadedCertificate,
+                    "\"participant\": {\"code\": \"FR\"},")))
+            .andExpect(status().isForbidden());
+        when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(false);
+        mockMvc.perform(authenticated(put("/trusted-did/DCC/DE/DSC"))
+                .contentType(MediaType.valueOf("application/did"))
+                .content(buildUploadDidDocument(encodedUploadedCertificate, "")))
+            .andExpect(status().isOk());
+        when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
+        mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/DCC/DE/DSC")))
+            .andExpect(status().isNoContent());
+        mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/DCC/DE/DSC")))
+            .andExpect(status().isNotFound());
+
+        List<AuditEventEntity> events = auditEventRepository.findAll();
+        Assertions.assertEquals(List.of(
+                TrustedDidController.AUDIT_EVENT_UPLOADED,
+                TrustedDidController.AUDIT_EVENT_UPLOAD_FAILED,
+                TrustedDidController.AUDIT_EVENT_NOT_VERIFIED,
+                TrustedDidController.AUDIT_EVENT_DELETED,
+                TrustedDidController.AUDIT_EVENT_DELETE_FAILED),
+            events.stream().map(AuditEventEntity::getEvent).collect(Collectors.toList()));
+        Assertions.assertEquals("uploadTrustedDid failed with HTTP 403", events.get(1).getDescription());
+        Assertions.assertEquals("deleteTrustedDid deleted 1 certificate(s)", events.get(3).getDescription());
+
+        for (AuditEventEntity event : events) {
+            Assertions.assertEquals(COUNTRY, event.getCountry());
+            Assertions.assertEquals(authThumbprint, event.getAuthenticationSha256Fingerprint());
+            Assertions.assertEquals(authThumbprint, event.getUploaderSha256Fingerprint());
+            Assertions.assertFalse(event.getDescription().contains("did:"), "DIDs must not be audited.");
+            Assertions.assertFalse(event.getDescription().contains(encodedUploadedCertificate));
+            Assertions.assertFalse(event.getDescription().contains(UPLOADED_KID));
+        }
     }
 
     @Test
@@ -758,7 +869,7 @@ class TrustedDidUploadIntegrationTest {
         trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.UPLOAD, "FR");
 
         for (String participant : List.of("FR", "#fr", "FRA", "#fra", "#XXA")) {
-            mockMvc.perform(authenticated(put("/trusted-did"))
+            mockMvc.perform(authenticated(put(UPLOAD_PATH))
                     .contentType(MediaType.valueOf("application/did"))
                     .content(buildUploadDidDocument(encodedUploadedCertificate,
                         "\"participant\": {\"code\": \"" + participant + "\"},")))
@@ -797,7 +908,7 @@ class TrustedDidUploadIntegrationTest {
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
         String document = buildUploadDidDocument(encodedUploadedCertificate, "\"participant\": {\"code\": \"DE\"},");
 
-        mockMvc.perform(authenticated(put("/trusted-did"))
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(document))
             .andExpect(status().isOk());
@@ -810,7 +921,7 @@ class TrustedDidUploadIntegrationTest {
         ((ObjectNode) foreignMethod.get("participant")).put("code", "#FRA");
         mixedDocument.withArray("verificationMethod").add(foreignMethod);
 
-        mockMvc.perform(authenticated(put("/trusted-did"))
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(objectMapper.writeValueAsString(mixedDocument)))
             .andExpect(status().isForbidden());
@@ -839,7 +950,7 @@ class TrustedDidUploadIntegrationTest {
             foreignEntity.setSourceType(source);
             foreignEntity = signerInformationRepository.save(foreignEntity);
 
-            mockMvc.perform(authenticated(put("/trusted-did"))
+            mockMvc.perform(authenticated(put(UPLOAD_PATH))
                     .contentType(MediaType.valueOf("application/did"))
                     .content(buildUploadDidDocument(encodedUploadedCertificate, "\"participant\": {\"code\": \"DE\"},")))
                 .andExpect(status().isBadRequest());
@@ -870,14 +981,14 @@ class TrustedDidUploadIntegrationTest {
 
         authenticatedCountry = "FR";
         for (String country : List.of("DE", "deu", "#DE", "#deu")) {
-            mockMvc.perform(authenticated(delete("/trusted-did/DCC/{country}/DSC", country)))
+            mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/DCC/{country}/DSC", country)))
                 .andExpect(status().isForbidden());
         }
 
         Assertions.assertEquals(1, signerInformationRepository.findAll().size());
 
         authenticatedCountry = COUNTRY;
-        mockMvc.perform(authenticated(delete("/trusted-did/DCC/{country}/DSC", "#deu")))
+        mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/DCC/{country}/DSC", "#deu")))
             .andExpect(status().isNoContent());
         Assertions.assertTrue(signerInformationRepository.findAll().isEmpty());
     }
@@ -886,7 +997,7 @@ class TrustedDidUploadIntegrationTest {
     void testTrustedDidEndpointsRequireAuthentication() throws Exception {
         String document = buildUploadDidDocument(encodedUploadedCertificate, "\"participant\": {\"code\": \"DE\"},");
 
-        mockMvc.perform(put("/trusted-did")
+        mockMvc.perform(put(UPLOAD_PATH)
                 .contentType(MediaType.valueOf("application/did"))
                 .content(document))
             .andExpect(status().isUnauthorized());
@@ -894,7 +1005,7 @@ class TrustedDidUploadIntegrationTest {
                 .contentType(MediaType.valueOf("application/did"))
                 .content(document))
             .andExpect(status().isUnauthorized());
-        mockMvc.perform(delete("/trusted-did/DDCC/XXA/CSCA")).andExpect(status().isUnauthorized());
+        mockMvc.perform(deleteWithDocument("/trusted-did/DDCC/XXA/CSCA")).andExpect(status().isUnauthorized());
 
         Assertions.assertTrue(signerInformationRepository.findAll().isEmpty());
     }
@@ -910,10 +1021,10 @@ class TrustedDidUploadIntegrationTest {
                 .content(buildUploadDidDocument(encodedUploadedCertificate, "")))
             .andExpect(status().isOk());
 
-        mockMvc.perform(authenticated(delete("/trusted-did/DDCC/XXA/DSC"))).andExpect(status().isNotFound());
-        mockMvc.perform(authenticated(delete("/trusted-did/DCC/XXA/CSCA"))).andExpect(status().isNotFound());
-        mockMvc.perform(authenticated(delete("/trusted-did/DDCC/DEU/CSCA"))).andExpect(status().isForbidden());
-        mockMvc.perform(authenticated(delete("/trusted-did/DDCC/INVALID/CSCA"))).andExpect(status().isBadRequest());
+        mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/DDCC/XXA/DSC"))).andExpect(status().isNotFound());
+        mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/DCC/XXA/CSCA"))).andExpect(status().isNotFound());
+        mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/DDCC/DEU/CSCA"))).andExpect(status().isForbidden());
+        mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/DDCC/INVALID/CSCA"))).andExpect(status().isBadRequest());
 
         Assertions.assertEquals(1, signerInformationRepository.findAll().size(),
             "Non matching certificates must not be deleted.");
@@ -986,6 +1097,12 @@ class TrustedDidUploadIntegrationTest {
                 DidTestHelper.encodeCoordinate(uploadedPublicKey.getW().getAffineX()),
                 DidTestHelper.encodeCoordinate(uploadedPublicKey.getW().getAffineY()),
                 encodedCertificate, VERIFICATION_METHOD);
+    }
+
+    private MockHttpServletRequestBuilder deleteWithDocument(String urlTemplate, Object... uriVariables) {
+        return delete(urlTemplate, uriVariables)
+            .contentType(MediaType.valueOf("application/did"))
+            .content(buildUploadDidDocument(encodedUploadedCertificate, ""));
     }
 
     private MockHttpServletRequestBuilder authenticated(MockHttpServletRequestBuilder builder) throws Exception {

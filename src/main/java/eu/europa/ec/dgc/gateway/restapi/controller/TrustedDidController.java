@@ -19,6 +19,7 @@ import eu.europa.ec.dgc.gateway.restapi.dto.did.TrustedDidPublicKeyDto;
 import eu.europa.ec.dgc.gateway.restapi.dto.did.TrustedUploadDidDocumentDto;
 import eu.europa.ec.dgc.gateway.restapi.filter.CertificateAuthenticationFilter;
 import eu.europa.ec.dgc.gateway.restapi.filter.CertificateAuthenticationRequired;
+import eu.europa.ec.dgc.gateway.service.AuditService;
 import eu.europa.ec.dgc.gateway.service.SignerInformationService;
 import eu.europa.ec.dgc.gateway.utils.DidResolutionUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -61,6 +62,14 @@ public class TrustedDidController {
 
     private final DgcConfigProperties configProperties;
 
+    private final AuditService auditService;
+
+    static final String AUDIT_EVENT_UPLOADED = "TRUSTED_DID_UPLOADED";
+    static final String AUDIT_EVENT_NOT_VERIFIED = "TRUSTED_DID_NOT_VERIFIED";
+    static final String AUDIT_EVENT_UPLOAD_FAILED = "TRUSTED_DID_UPLOAD_FAILED";
+    static final String AUDIT_EVENT_DELETED = "TRUSTED_DID_DELETED";
+    static final String AUDIT_EVENT_DELETE_FAILED = "TRUSTED_DID_DELETE_FAILED";
+
     private static final ObjectMapper VERIFY_OBJECT_MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
@@ -68,92 +77,6 @@ public class TrustedDidController {
      * Separator used by TNG to publish coded values of a verification method as DID fragment reference.
      */
     private static final String DID_FRAGMENT_SEPARATOR = "#";
-
-    /**
-     * Endpoint to upload a trusted DID document.
-     *
-     * @param trustedUploadDidDocumentDto the DID document to upload
-     * @return a {@link ResponseEntity} with HTTP 200 containing the resolved public key on success
-     */
-    @CertificateAuthenticationRequired
-    @PutMapping(consumes = {"application/did", "application/did+ld+json"})
-    @Operation(
-        security = {
-            @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEMA_HASH),
-            @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEMA_DISTINGUISH_NAME)
-        },
-        summary = "Uploads a trusted DID document",
-        tags = {"Trusted DID", "GDHCN"},
-        description = "Endpoint to upload a trusted DID document. Certificates already stored from a DID "
-            + "document are replaced; certificates stored via CMS are removed and re-created as DID entries. "
-            + "Every verification method must belong to the authenticated certificate's country.",
-        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            required = true,
-            description = "The DID document to upload.",
-            content = {
-                @Content(
-                    mediaType = "application/did",
-                    schema = @Schema(implementation = TrustedUploadDidDocumentDto.class)),
-                @Content(
-                    mediaType = "application/did+ld+json",
-                    schema = @Schema(implementation = TrustedUploadDidDocumentDto.class))
-            }
-        ),
-        responses = {
-            @ApiResponse(
-                responseCode = "200",
-                description = "Trusted DID document has been stored. Existing entries with the same certificate "
-                    + "thumbprint are replaced.",
-                content = @Content(
-                    mediaType = MediaType.APPLICATION_JSON_VALUE,
-                    schema = @Schema(implementation = TrustedDidPublicKeyDto.class))),
-            @ApiResponse(
-                responseCode = "400",
-                description = "Bad request. The submitted DID document is malformed or failed validation "
-                    + "(e.g. missing/invalid attributes, invalid id/controller format, invalid public key).",
-                content = @Content(
-                    mediaType = MediaType.APPLICATION_JSON_VALUE,
-                    schema = @Schema(implementation = ProblemReportDto.class))),
-            @ApiResponse(
-                responseCode = "401",
-                description = "Unauthorized. No Access to the system. (Client Certificate not present or whitelisted)",
-                content = @Content(
-                    mediaType = MediaType.APPLICATION_JSON_VALUE,
-                    schema = @Schema(implementation = ProblemReportDto.class))),
-            @ApiResponse(
-                responseCode = "403",
-                description = "Forbidden. A participant does not match the authenticated certificate's country.",
-                content = @Content(
-                    mediaType = MediaType.APPLICATION_JSON_VALUE,
-                    schema = @Schema(implementation = ProblemReportDto.class))),
-            @ApiResponse(
-                responseCode = "404",
-                description = "Not Found. The DID could not be resolved.",
-                content = @Content(
-                    mediaType = MediaType.APPLICATION_JSON_VALUE,
-                    schema = @Schema(implementation = ProblemReportDto.class))),
-            @ApiResponse(
-                responseCode = "415",
-                description = "Unsupported Media Type. Content-Type must be application/did "
-                    + "or application/did+ld+json.",
-                content = @Content(
-                    mediaType = MediaType.APPLICATION_JSON_VALUE,
-                    schema = @Schema(implementation = ProblemReportDto.class))),
-            @ApiResponse(
-                responseCode = "500",
-                description = "Internal Server Error. An unexpected error occurred while processing the request.",
-                content = @Content(
-                    mediaType = MediaType.APPLICATION_JSON_VALUE,
-                    schema = @Schema(implementation = ProblemReportDto.class)))
-        }
-    )
-    public ResponseEntity<TrustedDidPublicKeyDto> uploadTrustedDid(
-            @Valid @RequestBody TrustedUploadDidDocumentDto trustedUploadDidDocumentDto,
-            @RequestAttribute(value = CertificateAuthenticationFilter.REQUEST_PROP_COUNTRY)
-            String authenticatedCountry) {
-
-        return processUpload(trustedUploadDidDocumentDto, null, null, null, authenticatedCountry);
-    }
 
     /**
      * Endpoint to upload a trusted DID document providing the coded values as path variables.
@@ -258,31 +181,43 @@ public class TrustedDidController {
             @PathVariable("type") String type,
             @Valid @RequestBody TrustedUploadDidDocumentDto trustedUploadDidDocumentDto,
             @RequestAttribute(value = CertificateAuthenticationFilter.REQUEST_PROP_COUNTRY)
-            String authenticatedCountry) {
+            String authenticatedCountry,
+            @RequestAttribute(CertificateAuthenticationFilter.REQUEST_PROP_THUMBPRINT)
+            String authThumbprint) {
 
-        return processUpload(trustedUploadDidDocumentDto, domain, participant, type, authenticatedCountry);
+        return auditedUpload(trustedUploadDidDocumentDto, domain, participant, type, authenticatedCountry,
+                authThumbprint);
     }
 
     /**
      * Endpoint to delete the trusted DID certificates for the given domain, country and key usage.
      *
-     * @param domain  domain of the DID document, e.g. {@code DCC}
-     * @param country participant country code (ISO 3166 Alpha-2 or Alpha-3), e.g. {@code DE} or {@code DEU}
-     * @param type    key usage of the DID document, e.g. {@code DSC} or {@code CSCA}
+     * <p>The request body must contain a DID document whose proof is verified (same as for uploads) before
+     * any certificate is deleted. Only the certificates contained in the {@code x5c} properties of the document's
+     * verification methods are deleted (partial deletion); all other certificates are kept.
+     *
+     * @param domain                      domain of the DID document, e.g. {@code DCC}
+     * @param country                     participant country code (ISO 3166 Alpha-2 or Alpha-3), e.g. {@code DE}
+     * @param type                        key usage of the DID document, e.g. {@code DSC} or {@code CSCA}
+     * @param trustedUploadDidDocumentDto the signed DID document authorizing the deletion
      * @return a {@link ResponseEntity} with HTTP 204 on success
      */
     @CertificateAuthenticationRequired
-    @DeleteMapping(value = "/{domain}/{country}/{type}")
+    @DeleteMapping(value = "/{domain}/{country}/{type}",
+        consumes = {"application/did", "application/did+ld+json"})
     @Operation(
         security = {
             @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEMA_HASH),
             @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEMA_DISTINGUISH_NAME)
         },
-        summary = "Deletes the trusted DID certificates for a domain, country and key usage",
+        summary = "Deletes the trusted DID certificates listed in a DID document for a domain, country and key usage",
         tags = {"Trusted DID", "GDHCN"},
-        description = "Endpoint to delete all certificates imported from uploaded trusted DID documents whose "
-            + "verification method matches the given domain, country and key usage. Path variables may be "
-            + "provided with or without leading '#'. The country must match the authenticated certificate's country.",
+        description = "Endpoint to delete the certificates imported from uploaded trusted DID documents which are "
+            + "contained in the x5c properties of the submitted document's verification methods and whose "
+            + "verification method matches the given domain, country and key usage (partial deletion). Path "
+            + "variables may be provided with or without leading '#'. The country must match the authenticated "
+            + "certificate's country. The request body must contain a DID document with a valid proof; nothing is "
+            + "deleted if the proof cannot be verified.",
         parameters = {
             @Parameter(name = "domain", in = ParameterIn.PATH, required = true,
                 description = "Domain of the DID document.", example = "DCC"),
@@ -291,13 +226,26 @@ public class TrustedDidController {
             @Parameter(name = "type", in = ParameterIn.PATH, required = true,
                 description = "Key usage of the verification method.", example = "DSC")
         },
+        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            required = true,
+            description = "The signed DID document authorizing the deletion.",
+            content = {
+                @Content(
+                    mediaType = "application/did",
+                    schema = @Schema(implementation = TrustedUploadDidDocumentDto.class)),
+                @Content(
+                    mediaType = "application/did+ld+json",
+                    schema = @Schema(implementation = TrustedUploadDidDocumentDto.class))
+            }
+        ),
         responses = {
             @ApiResponse(
                 responseCode = "204",
                 description = "Trusted DID certificates have been deleted."),
             @ApiResponse(
                 responseCode = "400",
-                description = "Bad request. The given country code is invalid.",
+                description = "Bad request. The given country code is invalid, the DID document is malformed "
+                    + "or its proof could not be verified.",
                 content = @Content(
                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                     schema = @Schema(implementation = ProblemReportDto.class))),
@@ -315,7 +263,15 @@ public class TrustedDidController {
                     schema = @Schema(implementation = ProblemReportDto.class))),
             @ApiResponse(
                 responseCode = "404",
-                description = "Not Found. No trusted DID certificates exist for the given criteria.",
+                description = "Not Found. The DID could not be resolved or no trusted DID certificates exist for "
+                    + "the given criteria.",
+                content = @Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = ProblemReportDto.class))),
+            @ApiResponse(
+                responseCode = "415",
+                description = "Unsupported Media Type. Content-Type must be application/did "
+                    + "or application/did+ld+json.",
                 content = @Content(
                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                     schema = @Schema(implementation = ProblemReportDto.class))),
@@ -331,30 +287,134 @@ public class TrustedDidController {
             @PathVariable("domain") String domain,
             @PathVariable("country") String country,
             @PathVariable("type") String type,
+            @Valid @RequestBody TrustedUploadDidDocumentDto trustedUploadDidDocumentDto,
             @RequestAttribute(value = CertificateAuthenticationFilter.REQUEST_PROP_COUNTRY)
-            String authenticatedCountry) {
+            String authenticatedCountry,
+            @RequestAttribute(CertificateAuthenticationFilter.REQUEST_PROP_THUMBPRINT)
+            String authThumbprint) {
 
+        int deletedCertificates;
+        try {
+            deletedCertificates = processDelete(trustedUploadDidDocumentDto, domain, country, type,
+                    authenticatedCountry);
+        } catch (RuntimeException e) {
+            addAuditEvent(authenticatedCountry, authThumbprint, AUDIT_EVENT_DELETE_FAILED,
+                    "deleteTrustedDid failed with HTTP " + statusOf(e));
+            throw e;
+        }
+
+        addAuditEvent(authenticatedCountry, authThumbprint, AUDIT_EVENT_DELETED,
+                String.format("deleteTrustedDid deleted %d certificate(s)", deletedCertificates));
+
+        return ResponseEntity.noContent().build();
+    }
+
+    private int processDelete(TrustedUploadDidDocumentDto trustedUploadDidDocumentDto, String domain,
+                              String country, String type, String authenticatedCountry) {
         requireAuthenticatedCountry(authenticatedCountry);
         String criteria = String.format("domain=%s, country=%s, type=%s", domain, country, type);
         log.info("Requested deletion of trusted DID certificates ({})", criteria);
 
-        int deletedCertificates;
         try {
             requireCountryOwnership(country, authenticatedCountry);
-            deletedCertificates = signerInformationService.deleteDidSignerCertificates(domain, country, type);
         } catch (SignerInformationService.SignerCertCheckException e) {
             throw new DgcgResponseException(HttpStatus.BAD_REQUEST, "0x305", "Invalid Country Code",
                     criteria, e.getMessage());
         }
 
+        requireVerifiedProof(trustedUploadDidDocumentDto);
+
+        int deletedCertificates;
+        try {
+            deletedCertificates = signerInformationService.deleteDidSignerCertificates(domain, country, type,
+                    trustedUploadDidDocumentDto);
+        } catch (SignerInformationService.SignerCertCheckException e) {
+            if (e.getReason()
+                    == SignerInformationService.SignerCertCheckException.Reason.COUNTRY_OF_ORIGIN_CHECK_FAILED) {
+                throw new DgcgResponseException(HttpStatus.BAD_REQUEST, "0x305", "Invalid Country Code",
+                        criteria, e.getMessage());
+            }
+            throw new DgcgResponseException(HttpStatus.BAD_REQUEST, "0x301", "DID Document Error",
+                    criteria, e.getMessage());
+        }
+
         if (deletedCertificates == 0) {
             throw new DgcgResponseException(HttpStatus.NOT_FOUND, "0x305", "DID Document Not Found", criteria,
-                    "No trusted DID certificates found for the given domain, country and type.");
+                    "No trusted DID certificates of the submitted x5c entries found for the given domain, "
+                        + "country and type.");
         }
 
         log.info("Deleted {} trusted DID certificate(s) ({})", deletedCertificates, criteria);
 
-        return ResponseEntity.noContent().build();
+        return deletedCertificates;
+    }
+
+    /**
+     * Resolves the proof's verification method and rejects the request unless the proof of the given DID
+     * document is valid.
+     */
+    private void requireVerifiedProof(TrustedUploadDidDocumentDto trustedUploadDidDocumentDto) {
+        String verificationMethodId = trustedUploadDidDocumentDto.getProof().getVerificationMethod();
+        DidDocument didDocument = DidResolutionUtils.resolveOrThrow(didResolver, verificationMethodId);
+        PublicKey publicKey = toPublicKey(extractJwk(didDocument, verificationMethodId), verificationMethodId);
+
+        if (!verifyProof(trustedUploadDidDocumentDto, publicKey, verificationMethodId)) {
+            throw new DgcgResponseException(HttpStatus.BAD_REQUEST, "0x307", "DID Proof Verification Failed",
+                    verificationMethodId, "The proof of the submitted DID document could not be verified.");
+        }
+    }
+
+    private ResponseEntity<TrustedDidPublicKeyDto> auditedUpload(
+            TrustedUploadDidDocumentDto trustedUploadDidDocumentDto,
+            String domain,
+            String participant,
+            String keyusage,
+            String authenticatedCountry,
+            String authThumbprint) {
+
+        ResponseEntity<TrustedDidPublicKeyDto> response;
+        try {
+            response = processUpload(trustedUploadDidDocumentDto, domain, participant, keyusage,
+                    authenticatedCountry);
+        } catch (RuntimeException e) {
+            addAuditEvent(authenticatedCountry, authThumbprint, AUDIT_EVENT_UPLOAD_FAILED,
+                    "uploadTrustedDid failed with HTTP " + statusOf(e));
+            throw e;
+        }
+
+        TrustedDidPublicKeyDto body = response.getBody();
+        if (body != null && body.isVerified()) {
+            addAuditEvent(authenticatedCountry, authThumbprint, AUDIT_EVENT_UPLOADED,
+                    String.format("uploadTrustedDid stored %d certificate(s)", body.getStoredCertificates()));
+        } else {
+            addAuditEvent(authenticatedCountry, authThumbprint, AUDIT_EVENT_NOT_VERIFIED,
+                    "uploadTrustedDid proof not verified, nothing stored");
+        }
+        return response;
+    }
+
+    /**
+     * Persists an audit event for a trusted DID operation.
+     *
+     * <p>Only the authenticated country, the authentication certificate thumbprint, a fixed event id and a
+     * fixed description (optionally containing counters or HTTP status codes) are recorded. Request content such
+     * as DID documents, DIDs, verification method ids, keys, certificates or path variables is never persisted.
+     * As no separate uploader certificate exists for DID uploads, the authentication thumbprint is used as
+     * uploader fingerprint.
+     */
+    private void addAuditEvent(String authenticatedCountry, String authThumbprint, String event,
+                               String description) {
+        try {
+            auditService.addAuditEvent(authenticatedCountry, authThumbprint, authThumbprint, event, description);
+        } catch (RuntimeException e) {
+            log.error("Failed to persist trusted DID audit event {}: {}", event, e.getClass().getSimpleName());
+        }
+    }
+
+    private static int statusOf(RuntimeException e) {
+        return e instanceof DgcgResponseException dgcgResponseException
+                ? dgcgResponseException.getStatus().value()
+                : HttpStatus.INTERNAL_SERVER_ERROR.value();
     }
 
     private ResponseEntity<TrustedDidPublicKeyDto> processUpload(
