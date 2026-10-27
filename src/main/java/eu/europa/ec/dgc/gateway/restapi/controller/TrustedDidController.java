@@ -10,7 +10,6 @@ import eu.europa.ec.dgc.did.DidResolver;
 import eu.europa.ec.dgc.did.DidVerificationService;
 import eu.europa.ec.dgc.did.model.DidDocument;
 import eu.europa.ec.dgc.did.model.VerificationMethod;
-import eu.europa.ec.dgc.gateway.config.DgcConfigProperties;
 import eu.europa.ec.dgc.gateway.config.OpenApiConfig;
 import eu.europa.ec.dgc.gateway.entity.SignerInformationEntity;
 import eu.europa.ec.dgc.gateway.exception.DgcgResponseException;
@@ -59,8 +58,6 @@ public class TrustedDidController {
     private final DidVerificationService didVerificationService;
 
     private final SignerInformationService signerInformationService;
-
-    private final DgcConfigProperties configProperties;
 
     private final AuditService auditService;
 
@@ -180,7 +177,7 @@ public class TrustedDidController {
             @PathVariable("participant") String participant,
             @PathVariable("type") String type,
             @Valid @RequestBody TrustedUploadDidDocumentDto trustedUploadDidDocumentDto,
-            @RequestAttribute(value = CertificateAuthenticationFilter.REQUEST_PROP_COUNTRY)
+            @RequestAttribute(value = CertificateAuthenticationFilter.REQUEST_PROP_COUNTRY, required = false)
             String authenticatedCountry,
             @RequestAttribute(CertificateAuthenticationFilter.REQUEST_PROP_THUMBPRINT)
             String authThumbprint) {
@@ -288,7 +285,7 @@ public class TrustedDidController {
             @PathVariable("country") String country,
             @PathVariable("type") String type,
             @Valid @RequestBody TrustedUploadDidDocumentDto trustedUploadDidDocumentDto,
-            @RequestAttribute(value = CertificateAuthenticationFilter.REQUEST_PROP_COUNTRY)
+            @RequestAttribute(value = CertificateAuthenticationFilter.REQUEST_PROP_COUNTRY, required = false)
             String authenticatedCountry,
             @RequestAttribute(CertificateAuthenticationFilter.REQUEST_PROP_THUMBPRINT)
             String authThumbprint) {
@@ -476,12 +473,12 @@ public class TrustedDidController {
     }
 
     /**
-     * Requires the authentication filter's country unless ownership enforcement is explicitly disabled.
+     * Requires the authentication filter's country.
+     *
+     * <p>Country binding is optional so missing attributes reach this check instead of MVC returning HTTP 400.
      */
     private void requireAuthenticatedCountry(String authenticatedCountry) {
-        if (!configProperties.getTrustedDid().isEnforceCountryOwnership()) {
-            log.warn("Trusted DID country ownership enforcement is disabled; use only for local development.");
-        } else if (authenticatedCountry == null || authenticatedCountry.isBlank()) {
+        if (authenticatedCountry == null || authenticatedCountry.isBlank()) {
             log.warn("Trusted DID modification rejected: authenticated country is missing.");
             throw new DgcgResponseException(HttpStatus.UNAUTHORIZED, "0x400",
                     "No authentication information available", "",
@@ -494,9 +491,6 @@ public class TrustedDidController {
      */
     private void requireCountryOwnership(String participant, String authenticatedCountry)
             throws SignerInformationService.SignerCertCheckException {
-        if (!configProperties.getTrustedDid().isEnforceCountryOwnership()) {
-            return;
-        }
         String participantCountry = signerInformationService.normalizeParticipantCountryCode(participant);
         String callerCountry = signerInformationService.normalizeParticipantCountryCode(authenticatedCountry);
         if (!callerCountry.equals(participantCountry)) {

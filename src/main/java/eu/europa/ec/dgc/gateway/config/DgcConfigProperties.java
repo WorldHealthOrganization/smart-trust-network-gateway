@@ -54,6 +54,7 @@ public class DgcConfigProperties {
 
     private CountryCodeMap countryCodeMap = new CountryCodeMap();
 
+
     @Getter
     @Setter
     public static class DidConfig {

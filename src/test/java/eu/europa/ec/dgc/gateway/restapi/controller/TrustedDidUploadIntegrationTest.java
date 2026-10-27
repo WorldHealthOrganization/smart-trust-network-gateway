@@ -63,7 +63,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.bouncycastle.cert.X509CertificateHolder;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,9 +71,11 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -127,6 +128,9 @@ class TrustedDidUploadIntegrationTest {
     @Autowired
     TrustedDidController trustedDidController;
 
+    @Autowired
+    RequestMappingHandlerAdapter requestMappingHandlerAdapter;
+
     private MockMvc localMockMvc;
 
     private ECPublicKey uploadedPublicKey;
@@ -141,8 +145,10 @@ class TrustedDidUploadIntegrationTest {
         uploadedKid = UPLOADED_KID;
         authenticatedCountry = COUNTRY;
         // The standalone setup bypasses the authentication filter; only the thumbprint is provided so the
-        // country attribute stays absent for the local override scenarios.
+        // country attribute stays absent to verify that requests without authenticated country are rejected.
         localMockMvc = MockMvcBuilders.standaloneSetup(trustedDidController)
+            .setMessageConverters(requestMappingHandlerAdapter.getMessageConverters()
+                .toArray(HttpMessageConverter<?>[]::new))
             .defaultRequest(get("/").requestAttr(CertificateAuthenticationFilter.REQUEST_PROP_THUMBPRINT,
                 trustedPartyTestHelper.getHash(TrustedPartyEntity.CertificateType.AUTHENTICATION, COUNTRY)))
             .setControllerAdvice(new ErrorHandler()).build();
@@ -162,14 +168,8 @@ class TrustedDidUploadIntegrationTest {
         mockDidResolution();
     }
 
-    @AfterEach
-    void restoreCountryOwnershipConfiguration() {
-        dgcConfigProperties.getTrustedDid().setEnforceCountryOwnership(true);
-    }
-
     @Test
-    void testMissingAuthenticatedCountryFailsClosedByDefault() throws Exception {
-        Assertions.assertTrue(dgcConfigProperties.getTrustedDid().isEnforceCountryOwnership());
+    void testMissingAuthenticatedCountryFailsClosed() throws Exception {
         String document = buildUploadDidDocument(encodedUploadedCertificate, "\"participant\": {\"code\": \"DE\"},");
 
         localMockMvc.perform(put(UPLOAD_PATH)
@@ -179,66 +179,6 @@ class TrustedDidUploadIntegrationTest {
             .andExpect(jsonPath("$.code").value("0x400"));
         localMockMvc.perform(deleteWithDocument("/trusted-did/DCC/DE/DSC"))
             .andExpect(status().isUnauthorized());
-        Assertions.assertTrue(signerInformationRepository.findAll().isEmpty());
-    }
-
-    @Test
-    void testLocalOverrideAllowsUploadsAndDeleteWithoutCountryAttribute() throws Exception {
-        dgcConfigProperties.getTrustedDid().setEnforceCountryOwnership(false);
-        when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
-
-        localMockMvc.perform(put(UPLOAD_PATH)
-                .contentType(MediaType.valueOf("application/did+ld+json"))
-                .content(buildUploadDidDocument(encodedUploadedCertificate,
-                    "\"domain\": {\"code\": \"DCC\"}, \"participant\": {\"code\": \"DE\"},"
-                        + "\"keyusage\": {\"code\": \"DSC\"},")))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.stored").value(true));
-
-        localMockMvc.perform(put("/trusted-did/DCC/DEU/DSC")
-                .contentType(MediaType.valueOf("application/did+ld+json"))
-                .content(buildUploadDidDocument(encodedUploadedCertificate, "")))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.stored").value(true));
-
-        Assertions.assertEquals(1, signerInformationRepository.findAll().size());
-        localMockMvc.perform(deleteWithDocument("/trusted-did/DCC/DE/DSC")).andExpect(status().isNoContent());
-        Assertions.assertTrue(signerInformationRepository.findAll().isEmpty());
-    }
-
-    @Test
-    void testLocalOverrideStillRequiresVerifiedProofAndValidParticipant() throws Exception {
-        dgcConfigProperties.getTrustedDid().setEnforceCountryOwnership(false);
-        String document = buildUploadDidDocument(encodedUploadedCertificate, "");
-        when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(false);
-
-        localMockMvc.perform(put("/trusted-did/DCC/DE/DSC")
-                .contentType(MediaType.valueOf("application/did+ld+json"))
-                .content(document))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.stored").value(false));
-        Assertions.assertTrue(signerInformationRepository.findAll().isEmpty());
-
-        when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
-        localMockMvc.perform(put("/trusted-did/DCC/XY/DSC")
-                .contentType(MediaType.valueOf("application/did+ld+json"))
-                .content(document))
-            .andExpect(status().isBadRequest());
-        Assertions.assertTrue(signerInformationRepository.findAll().isEmpty());
-    }
-
-    @Test
-    void testLocalOverrideSkipsCallerCountryComparison() throws Exception {
-        dgcConfigProperties.getTrustedDid().setEnforceCountryOwnership(false);
-        authenticatedCountry = "FR";
-        when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
-
-        mockMvc.perform(authenticated(put("/trusted-did/DCC/DE/DSC"))
-                .contentType(MediaType.valueOf("application/did+ld+json"))
-                .content(buildUploadDidDocument(encodedUploadedCertificate, "")))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.stored").value(true));
-        mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/DCC/DE/DSC"))).andExpect(status().isNoContent());
         Assertions.assertTrue(signerInformationRepository.findAll().isEmpty());
     }
 
@@ -964,11 +904,6 @@ class TrustedDidUploadIntegrationTest {
         }
     }
 
-    @Test
-    void testLocalOverridePreservesCrossCountryReplacementProtection() throws Exception {
-        dgcConfigProperties.getTrustedDid().setEnforceCountryOwnership(false);
-        testOwnParticipantCannotReplaceAnotherCountrysCertificate();
-    }
 
     @Test
     void testForeignCallerCannotDeleteAnotherCountrysDid() throws Exception {
