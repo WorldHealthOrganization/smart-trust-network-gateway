@@ -76,9 +76,9 @@ public class SignerInformationEntity extends FederatedEntity {
     String rawData;
 
     /**
-     * Signature of the Upload Certificate.
+     * Signature of the Upload Certificate (CMS) or the Base64 encoded uploaded DID document (DID).
      */
-    @Column(name = "signature", length = 6000)
+    @Column(name = "signature", columnDefinition = "TEXT")
     String signature;
 
     /**
@@ -97,6 +97,26 @@ public class SignerInformationEntity extends FederatedEntity {
 
     @Column(name = "properties", length = 2000)
     private String properties;
+
+    /**
+     * Source the certificate was provided by.
+     */
+    @Column(name = "source_type", nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
+    private SourceType sourceType = SourceType.CMS;
+
+    public enum SourceType {
+
+        /**
+         * Certificate was uploaded as signed CMS package.
+         */
+        CMS,
+
+        /**
+         * Certificate was imported from an uploaded DID document.
+         */
+        DID
+    }
 
     public enum CertificateType {
 

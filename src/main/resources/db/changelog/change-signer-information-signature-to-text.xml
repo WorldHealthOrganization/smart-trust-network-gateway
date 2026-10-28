@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.6.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <!-- H2 maps TEXT to CLOB, which fails Hibernate schema validation of a String attribute -->
+    <property name="signer_information.signature.type" value="VARCHAR(1000000)" dbms="h2"/>
+    <property name="signer_information.signature.type" value="TEXT"/>
+
+    <!-- DID uploads store the whole Base64 encoded DID document, which exceeds 6000 characters as soon as it
+         contains multiple verification methods. -->
+    <changeSet id="change-signer-information-signature-to-text" author="who">
+        <modifyDataType tableName="signer_information" columnName="signature"
+                        newDataType="${signer_information.signature.type}"/>
+    </changeSet>
+</databaseChangeLog>

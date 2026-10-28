@@ -47,6 +47,7 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.ECGenParameterSpec;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -143,6 +144,9 @@ public class DidTrustListServiceTest {
         certAuthEu = trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.AUTHENTICATION, "EU", signerType);
 
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(signerType.getSigningAlgorithm());
+        if (signerType == CertificateTestUtils.SignerType.EC) {
+            keyPairGenerator.initialize(new ECGenParameterSpec("secp256r1"));
+        }
         certDscDe =
             CertificateTestUtils.generateCertificate(keyPairGenerator.generateKeyPair(), "DE",
                     "Test", certCscaDe,
@@ -165,7 +169,8 @@ public class DidTrustListServiceTest {
             "sig1",
             null, // Don't provide a KID to test that calculated KID will be used
             SignerInformationEntity.CertificateType.DSC,
-            null
+            null,
+            SignerInformationEntity.SourceType.CMS
         ));
 
         signerInformationRepository.save(new SignerInformationEntity(
@@ -177,7 +182,8 @@ public class DidTrustListServiceTest {
             "sig2",
             "kid2",
             SignerInformationEntity.CertificateType.DSC,
-            null
+            null,
+            SignerInformationEntity.SourceType.CMS
         ));
 
         federatedCertDscEx = CertificateTestUtils.generateCertificate(keyPairGenerator.generateKeyPair(), "EX",
@@ -191,7 +197,8 @@ public class DidTrustListServiceTest {
             "sig3",
             "kid3",
             SignerInformationEntity.CertificateType.DSC,
-            null
+            null,
+            SignerInformationEntity.SourceType.CMS
         );
         federatedDscEntity.setSourceGateway(federationGateway);
         signerInformationRepository.save(federatedDscEntity);
