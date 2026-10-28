@@ -33,14 +33,16 @@ ThirdParty Licenses
 | com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.22.0 | The Apache Software License, Version 2.0 |
 | com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.22.0 | The Apache Software License, Version 2.0 |
 | com.fasterxml.jackson.module:jackson-module-parameter-names:2.22.0 | The Apache Software License, Version 2.0 |
+| com.github.ben-manes.caffeine:caffeine:3.2.4 | Apache License, Version 2.0 |
 | com.github.everit-org.json-schema:org.everit.json.schema:1.14.3 | Apache License, Version 2.0 |
 | com.github.jnr:jffi:1.2.9 | The Apache Software License, Version 2.0 |
 | com.github.jnr:jnr-ffi:2.0.5 | The Apache Software License, Version 2.0 |
 | com.github.jnr:jnr-x86asm:1.0.2 | MIT License |
 | com.github.multiformats:java-multibase:v1.1.0 | MIT License |
+| com.github.peteroupc:datautilities:1.1.0 | CC0 Universal |
 | com.github.peteroupc:numbers:1.8.2 | CC0-1.0 |
 | com.google.code.findbugs:jsr305:3.0.2 | The Apache Software License, Version 2.0 |
-| com.google.errorprone:error_prone_annotations:2.7.1 | Apache 2.0 |
+| com.google.errorprone:error_prone_annotations:2.49.0 | Apache 2.0 |
 | com.google.guava:failureaccess:1.0.1 | The Apache Software License, Version 2.0 |
 | com.google.guava:guava:31.0.1-android | Apache License, Version 2.0 |
 | com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava | The Apache Software License, Version 2.0 |
@@ -58,14 +60,14 @@ ThirdParty Licenses
 | com.squareup.okio:okio:3.6.0 | The Apache Software License, Version 2.0 |
 | com.squareup.okio:okio-jvm:3.6.0 | The Apache Software License, Version 2.0 |
 | com.sun.istack:istack-commons-runtime:4.1.2 | Eclipse Distribution License - v 1.0 |
-| com.upokecenter:cbor:4.5.2 | CC0-1.0 |
+| com.upokecenter:cbor:4.5.4 | CC0-1.0 |
 | com.vaadin.external.google:android-json:0.0.20131108.vaadin1 | Apache License 2.0 |
 | com.zaxxer:HikariCP:6.3.3 | The Apache Software License, Version 2.0 |
 | commons-codec:commons-codec:1.18.0 | Apache-2.0 |
 | commons-collections:commons-collections:3.2.2 | Apache License, Version 2.0 |
 | commons-digester:commons-digester:2.1 | The Apache Software License, Version 2.0 |
 | commons-fileupload:commons-fileupload:1.5 | Apache-2.0 |
-| commons-io:commons-io:2.11.0 | Apache License, Version 2.0 |
+| commons-io:commons-io:2.16.1 | Apache-2.0 |
 | commons-logging:commons-logging:1.2 | The Apache Software License, Version 2.0 |
 | commons-validator:commons-validator:1.7 | Apache License, Version 2.0 |
 | decentralized-identity:jsonld-common-java:1.0.0 | Unknown license |
@@ -225,6 +227,7 @@ ThirdParty Licenses
 | org.springframework.boot:spring-boot-actuator:3.5.16 | Apache License, Version 2.0 |
 | org.springframework.boot:spring-boot-actuator-autoconfigure:3.5.16 | Apache License, Version 2.0 |
 | org.springframework.boot:spring-boot-autoconfigure:3.5.16 | Apache License, Version 2.0 |
+| org.springframework.boot:spring-boot-configuration-processor:3.5.16 | Apache License, Version 2.0 |
 | org.springframework.boot:spring-boot-starter:3.5.16 | Apache License, Version 2.0 |
 | org.springframework.boot:spring-boot-starter-actuator:3.5.16 | Apache License, Version 2.0 |
 | org.springframework.boot:spring-boot-starter-data-jpa:3.5.16 | Apache License, Version 2.0 |
