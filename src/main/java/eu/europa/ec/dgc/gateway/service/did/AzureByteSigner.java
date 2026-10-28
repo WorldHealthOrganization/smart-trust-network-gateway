@@ -63,12 +63,12 @@ public class AzureByteSigner extends ByteSigner {
 
         cryptographyClient = new CryptographyClientBuilder()
             .keyIdentifier(dgcConfigProperties.getDid().getAzure().getSecretUrl())
-            //.credential(new ClientSecretCredentialBuilder()
-                .credential(new WorkloadIdentityCredentialBuilder()
+            // .credential(new ClientSecretCredentialBuilder()
+            .credential(new WorkloadIdentityCredentialBuilder()
                 .httpClient(httpClient)
-//                .clientId(dgcConfigProperties.getDid().getAzure().getSpId())
-//                .clientSecret(dgcConfigProperties.getDid().getAzure().getSpSecret())
-//                .tenantId(dgcConfigProperties.getDid().getAzure().getSpTenant())
+                // .clientId(dgcConfigProperties.getDid().getAzure().getSpId())
+                // .clientSecret(dgcConfigProperties.getDid().getAzure().getSpSecret())
+                // .tenantId(dgcConfigProperties.getDid().getAzure().getSpTenant())
                 .build())
             .httpClient(httpClient)
             .buildClient();
