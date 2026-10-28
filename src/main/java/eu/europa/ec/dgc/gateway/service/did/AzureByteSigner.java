@@ -24,6 +24,7 @@ import com.azure.core.http.HttpClient;
 import com.azure.core.http.ProxyOptions;
 import com.azure.core.util.HttpClientOptions;
 import com.azure.identity.ClientSecretCredentialBuilder;
+import com.azure.identity.WorkloadIdentityCredentialBuilder;
 import com.azure.security.keyvault.keys.cryptography.CryptographyClient;
 import com.azure.security.keyvault.keys.cryptography.CryptographyClientBuilder;
 import com.azure.security.keyvault.keys.cryptography.models.SignResult;
@@ -62,11 +63,12 @@ public class AzureByteSigner extends ByteSigner {
 
         cryptographyClient = new CryptographyClientBuilder()
             .keyIdentifier(dgcConfigProperties.getDid().getAzure().getSecretUrl())
-            .credential(new ClientSecretCredentialBuilder()
+            //.credential(new ClientSecretCredentialBuilder()
+                .credential(new WorkloadIdentityCredentialBuilder()
                 .httpClient(httpClient)
-                .clientId(dgcConfigProperties.getDid().getAzure().getSpId())
-                .clientSecret(dgcConfigProperties.getDid().getAzure().getSpSecret())
-                .tenantId(dgcConfigProperties.getDid().getAzure().getSpTenant())
+//                .clientId(dgcConfigProperties.getDid().getAzure().getSpId())
+//                .clientSecret(dgcConfigProperties.getDid().getAzure().getSpSecret())
+//                .tenantId(dgcConfigProperties.getDid().getAzure().getSpTenant())
                 .build())
             .httpClient(httpClient)
             .buildClient();
