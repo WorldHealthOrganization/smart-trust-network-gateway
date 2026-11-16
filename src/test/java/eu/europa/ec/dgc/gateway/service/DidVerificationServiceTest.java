@@ -29,6 +29,8 @@ import java.security.interfaces.ECPublicKey;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -66,6 +68,28 @@ class DidVerificationServiceTest {
 
         Assertions.assertFalse(verified,
                 "Proof must not be verified with a public key that does not belong to the signing key.");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "https://smart.who.int/trust/tng-context/v1-DEV.jsonld",
+        "https://smart.who.int/trust/tng-context/v1-UAT.jsonld",
+        "https://smart.who.int/trust/tng-context/v1.jsonld"
+    })
+    void shouldVerifyProofOfDidDocumentUsingTngContext(String tngContext) throws Exception {
+        KeyPair keyPair = DidTestHelper.generateEcKeyPair();
+        String unsignedDidDocument = DidTestHelper.buildUnsignedDidDocument((ECPublicKey) keyPair.getPublic())
+                .replace("\"https://w3id.org/security/suites/jws-2020/v1\"",
+                        "\"https://w3id.org/security/suites/jws-2020/v1\", \"" + tngContext + "\"")
+                .replace("\"type\": \"JsonWebKey2020\",",
+                        "\"type\": \"JsonWebKey2020\", \"domain\": {\"code\": \"#DCC\"},"
+                                + " \"participant\": {\"code\": \"#XXU\"}, \"keyusage\": {\"code\": \"#DSC\"},");
+
+        String signedDidDocument = DidTestHelper.signDidDocument(
+                (ECPrivateKey) keyPair.getPrivate(), unsignedDidDocument, didContextLoader);
+
+        Assertions.assertTrue(didVerificationService.verify(signedDidDocument, keyPair.getPublic()),
+                "Proof of a DID document using the TNG context " + tngContext + " should be verified.");
     }
 
     private String signDidDocument(KeyPair keyPair) throws Exception {

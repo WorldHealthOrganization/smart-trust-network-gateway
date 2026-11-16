@@ -76,8 +76,22 @@ public class DidTestHelper {
      */
     public static String signDidDocument(ECPrivateKey privateKey, ECPublicKey publicKey,
                                          DocumentLoader documentLoader) throws Exception {
+        return signDidDocument(privateKey, buildUnsignedDidDocument(publicKey), documentLoader);
+    }
 
-        JsonLDObject didDocument = JsonLDObject.fromJson(buildUnsignedDidDocument(publicKey));
+    /**
+     * Signs the given unsigned DID document with the given private key.
+     *
+     * @param privateKey          the private key used to create the proof
+     * @param unsignedDidDocument the unsigned DID document as JSON
+     * @param documentLoader      the document loader used to resolve the JSON-LD contexts
+     * @return the signed DID document as JSON
+     * @throws Exception if the DID document could not be signed
+     */
+    public static String signDidDocument(ECPrivateKey privateKey, String unsignedDidDocument,
+                                         DocumentLoader documentLoader) throws Exception {
+
+        JsonLDObject didDocument = JsonLDObject.fromJson(unsignedDidDocument);
         didDocument.setDocumentLoader(documentLoader);
 
         JsonWebSignature2020LdSigner signer =

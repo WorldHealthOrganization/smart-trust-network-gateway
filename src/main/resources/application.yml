@@ -99,6 +99,9 @@ dgc:
     contextMapping:
       "[https://www.w3.org/ns/did/v1]": did_v1.json
       "[https://w3id.org/security/suites/jws-2020/v1]": jws-2020_v1.json
+      "[https://smart.who.int/trust/tng-context/v1-DEV.jsonld]": v1-dev.jsonld
+      "[https://smart.who.int/trust/tng-context/v1-UAT.jsonld]": v1-uat.jsonld
+      "[https://smart.who.int/trust/tng-context/v1.jsonld]": v1.jsonld
     didUploadProvider: dummy
     git:
       workdir: /tmp/tng-cdn-dev
@@ -136,3 +139,7 @@ dgc:
 springdoc:
   api-docs:
     enabled: false
+
+logging:
+  level:
+    eu.europa.ec.dgc.did.DidVerificationService: DEBUG
