@@ -138,26 +138,29 @@ public class DidTrustListService {
     }
 
     private String getCountryAsLowerCaseAlpha3(String country) {
-        if (country == null || country.length() != 2 && country.length() != 3) {
+        if (country == null || (country.length() != 2 && country.length() != 3)) {
             return null;
         } else if (country.length() == 3) {
             return country.toLowerCase();
         }
 
-        return configProperties.getCountryCodeMap().getVirtualCountries()
-                .compute(country, (alpha2, alpha3) -> {
-                    if (alpha3 != null) {
-                        return alpha3.toLowerCase();
-                    }
+        Map<String, String> virtualCountries = configProperties.getCountryCodeMap().getVirtualCountries();
+        if (virtualCountries != null && virtualCountries.containsKey(country)) {
+            return virtualCountries.get(country).toLowerCase();
+        }
 
-                    try {
-                        return new Locale("en", alpha2).getISO3Country().toLowerCase();
-                    } catch (MissingResourceException e) {
-                        log.error("Country Code to alpha 3 conversion issue for country {} : {}",
-                                country, e.getMessage());
-                        return null;
-                    }
-                });
+        try {
+            // Skip ISO lookup for synthetic or prefixed codes (X*, Y*, Z*)
+            if (country.matches("^[X-Z].*")) {
+                log.warn("Skipping ISO alpha-3 lookup for virtual country: {}", country);
+                return country.toLowerCase();
+            }
+
+            return new Locale("en", country).getISO3Country().toLowerCase();
+        } catch (MissingResourceException e) {
+            log.error("Country Code to alpha 3 conversion issue for country {} : {}", country, e.getMessage());
+            return null;
+        }
     }
 
     private String generateTrustList(List<String> countries) throws Exception {
