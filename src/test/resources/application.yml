@@ -41,6 +41,12 @@ dgc:
       pem: X-SSL-Client-Cert
   revocation:
     enabled: false
+  trustedCertificates:
+    allowedDomains:
+      - DCC
+      - IPS-PILGRIMAGE
+      - DICVP
+      - PH4H
   did:
     enableDidGeneration: true
     didId: a

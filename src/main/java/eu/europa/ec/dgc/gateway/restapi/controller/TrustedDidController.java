@@ -40,6 +40,7 @@ import eu.europa.ec.dgc.gateway.restapi.filter.CertificateAuthenticationFilter;
 import eu.europa.ec.dgc.gateway.restapi.filter.CertificateAuthenticationRequired;
 import eu.europa.ec.dgc.gateway.service.AuditService;
 import eu.europa.ec.dgc.gateway.service.SignerInformationService;
+import eu.europa.ec.dgc.gateway.utils.DgcMdc;
 import eu.europa.ec.dgc.gateway.utils.DidResolutionUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -54,8 +55,10 @@ import java.text.ParseException;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.cert.X509CertificateHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -94,6 +97,9 @@ public class TrustedDidController {
      * Separator used by TNG to publish coded values of a verification method as DID fragment reference.
      */
     private static final String DID_FRAGMENT_SEPARATOR = "#";
+
+    private static final String MDC_VERIFICATION_ERROR_REASON = "verificationFailureReason";
+    private static final String MDC_VERIFICATION_ERROR_MESSAGE = "verificationFailureMessage";
 
     /**
      * Endpoint to upload a trusted DID document providing the coded values as path variables.
@@ -167,7 +173,8 @@ public class TrustedDidController {
                     schema = @Schema(implementation = ProblemReportDto.class))),
             @ApiResponse(
                 responseCode = "403",
-                description = "Forbidden. A participant does not match the authenticated certificate's country.",
+                description = "Forbidden. A participant does not match the authenticated certificate's country "
+                    + "(0x306), or the proof is not signed with that country's UPLOAD certificate key (0x308).",
                 content = @Content(
                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                     schema = @Schema(implementation = ProblemReportDto.class))),
@@ -274,7 +281,8 @@ public class TrustedDidController {
                     schema = @Schema(implementation = ProblemReportDto.class))),
             @ApiResponse(
                 responseCode = "403",
-                description = "Forbidden. The country does not match the authenticated certificate's country.",
+                description = "Forbidden. The country does not match the authenticated certificate's country "
+                    + "(0x306), or the proof is not signed with that country's UPLOAD certificate key (0x308).",
                 content = @Content(
                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                     schema = @Schema(implementation = ProblemReportDto.class))),
@@ -310,24 +318,26 @@ public class TrustedDidController {
             @RequestAttribute(CertificateAuthenticationFilter.REQUEST_PROP_THUMBPRINT)
             String authThumbprint) {
 
+        AtomicReference<X509CertificateHolder> uploaderCertificate = new AtomicReference<>();
         int deletedCertificates;
         try {
             deletedCertificates = processDelete(trustedUploadDidDocumentDto, domain, country, type,
-                    authenticatedCountry);
+                    authenticatedCountry, uploaderCertificate);
         } catch (RuntimeException e) {
-            addAuditEvent(authenticatedCountry, authThumbprint, AUDIT_EVENT_DELETE_FAILED,
-                    "deleteTrustedDid failed with HTTP " + statusOf(e));
+            addAuditEvent(authenticatedCountry, uploaderCertificate.get(), authThumbprint,
+                    AUDIT_EVENT_DELETE_FAILED, "deleteTrustedDid failed with HTTP " + statusOf(e));
             throw e;
         }
 
-        addAuditEvent(authenticatedCountry, authThumbprint, AUDIT_EVENT_DELETED,
+        addAuditEvent(authenticatedCountry, uploaderCertificate.get(), authThumbprint, AUDIT_EVENT_DELETED,
                 String.format("deleteTrustedDid deleted %d certificate(s)", deletedCertificates));
 
         return ResponseEntity.noContent().build();
     }
 
     private int processDelete(TrustedUploadDidDocumentDto trustedUploadDidDocumentDto, String domain,
-                              String country, String type, String authenticatedCountry) {
+                              String country, String type, String authenticatedCountry,
+                              AtomicReference<X509CertificateHolder> uploaderCertificate) {
         requireAuthenticatedCountry(authenticatedCountry);
         String criteria = String.format("domain=%s, country=%s, type=%s", domain, country, type);
         log.info("Requested deletion of trusted DID certificates ({})", criteria);
@@ -339,7 +349,7 @@ public class TrustedDidController {
                     criteria, e.getMessage());
         }
 
-        requireVerifiedProof(trustedUploadDidDocumentDto);
+        requireVerifiedProof(trustedUploadDidDocumentDto, authenticatedCountry, uploaderCertificate);
 
         int deletedCertificates;
         try {
@@ -367,13 +377,18 @@ public class TrustedDidController {
     }
 
     /**
-     * Resolves the proof's verification method and rejects the request unless the proof of the given DID
-     * document is valid.
+     * Resolves the proof's verification method and rejects the request unless the proof was signed with the
+     * authenticated country's UPLOAD key and is valid. The resolved UPLOAD certificate is published to
+     * {@code uploaderCertificate} for auditing.
      */
-    private void requireVerifiedProof(TrustedUploadDidDocumentDto trustedUploadDidDocumentDto) {
+    private void requireVerifiedProof(TrustedUploadDidDocumentDto trustedUploadDidDocumentDto,
+                                      String authenticatedCountry,
+                                      AtomicReference<X509CertificateHolder> uploaderCertificate) {
         String verificationMethodId = trustedUploadDidDocumentDto.getProof().getVerificationMethod();
         DidDocument didDocument = DidResolutionUtils.resolveOrThrow(didResolver, verificationMethodId);
         PublicKey publicKey = toPublicKey(extractJwk(didDocument, verificationMethodId), verificationMethodId);
+
+        uploaderCertificate.set(requireUploadCertificateSigner(publicKey, authenticatedCountry, verificationMethodId));
 
         if (!verifyProof(trustedUploadDidDocumentDto, publicKey, verificationMethodId)) {
             throw new DgcgResponseException(HttpStatus.BAD_REQUEST, "0x307", "DID Proof Verification Failed",
@@ -389,23 +404,24 @@ public class TrustedDidController {
             String authenticatedCountry,
             String authThumbprint) {
 
+        AtomicReference<X509CertificateHolder> uploaderCertificate = new AtomicReference<>();
         ResponseEntity<TrustedDidPublicKeyDto> response;
         try {
             response = processUpload(trustedUploadDidDocumentDto, domain, participant, keyusage,
-                    authenticatedCountry);
+                    authenticatedCountry, uploaderCertificate);
         } catch (RuntimeException e) {
-            addAuditEvent(authenticatedCountry, authThumbprint, AUDIT_EVENT_UPLOAD_FAILED,
-                    "uploadTrustedDid failed with HTTP " + statusOf(e));
+            addAuditEvent(authenticatedCountry, uploaderCertificate.get(), authThumbprint,
+                    AUDIT_EVENT_UPLOAD_FAILED, "uploadTrustedDid failed with HTTP " + statusOf(e));
             throw e;
         }
 
         TrustedDidPublicKeyDto body = response.getBody();
         if (body != null && body.isVerified()) {
-            addAuditEvent(authenticatedCountry, authThumbprint, AUDIT_EVENT_UPLOADED,
+            addAuditEvent(authenticatedCountry, uploaderCertificate.get(), authThumbprint, AUDIT_EVENT_UPLOADED,
                     String.format("uploadTrustedDid stored %d certificate(s)", body.getStoredCertificates()));
         } else {
-            addAuditEvent(authenticatedCountry, authThumbprint, AUDIT_EVENT_NOT_VERIFIED,
-                    "uploadTrustedDid proof not verified, nothing stored");
+            addAuditEvent(authenticatedCountry, uploaderCertificate.get(), authThumbprint,
+                    AUDIT_EVENT_NOT_VERIFIED, "uploadTrustedDid proof not verified, nothing stored");
         }
         return response;
     }
@@ -413,16 +429,23 @@ public class TrustedDidController {
     /**
      * Persists an audit event for a trusted DID operation.
      *
-     * <p>Only the authenticated country, the authentication certificate thumbprint, a fixed event id and a
-     * fixed description (optionally containing counters or HTTP status codes) are recorded. Request content such
-     * as DID documents, DIDs, verification method ids, keys, certificates or path variables is never persisted.
-     * As no separate uploader certificate exists for DID uploads, the authentication thumbprint is used as
-     * uploader fingerprint.
+     * <p>Only the authenticated country, the uploader and authentication certificate thumbprints, a fixed event
+     * id and a fixed description (optionally containing counters or HTTP status codes) are recorded. Request
+     * content such as DID documents, DIDs, verification method ids, keys, certificates or path variables is never
+     * persisted. The uploader is the country's UPLOAD certificate holding the key which signed the DID proof; if
+     * the request failed before it could be resolved, the authentication thumbprint is used as uploader
+     * fingerprint (the column is mandatory).
      */
-    private void addAuditEvent(String authenticatedCountry, String authThumbprint, String event,
-                               String description) {
+    private void addAuditEvent(String authenticatedCountry, X509CertificateHolder uploaderCertificate,
+                               String authThumbprint, String event, String description) {
         try {
-            auditService.addAuditEvent(authenticatedCountry, authThumbprint, authThumbprint, event, description);
+            if (uploaderCertificate != null) {
+                auditService.addAuditEvent(authenticatedCountry, uploaderCertificate, authThumbprint, event,
+                        description);
+            } else {
+                auditService.addAuditEvent(authenticatedCountry, authThumbprint, authThumbprint, event,
+                        description);
+            }
         } catch (RuntimeException e) {
             log.error("Failed to persist trusted DID audit event {}: {}", event, e.getClass().getSimpleName());
         }
@@ -439,23 +462,24 @@ public class TrustedDidController {
             String domain,
             String participant,
             String keyusage,
-            String authenticatedCountry) {
+            String authenticatedCountry,
+            AtomicReference<X509CertificateHolder> uploaderCertificate) {
 
         requireAuthenticatedCountry(authenticatedCountry);
         String verificationMethodId = trustedUploadDidDocumentDto.getProof().getVerificationMethod();
-        log.info("Received trusted DID: {} with proof verification method {}",
-                trustedUploadDidDocumentDto, verificationMethodId);
-
+        log.info("Uploading new trusted DID document with proof verification method {}", verificationMethodId);
 
         DidDocument didDocument = DidResolutionUtils.resolveOrThrow(didResolver, verificationMethodId);
-
-        log.info("Resolved DID document for verification method {}: {}", verificationMethodId, didDocument);
 
         JWK jwk = extractJwk(didDocument, verificationMethodId);
         PublicKey publicKey = toPublicKey(jwk, verificationMethodId);
 
         log.info("Extracted public key ({}) for verification method {}",
                 publicKey.getAlgorithm(), verificationMethodId);
+
+        X509CertificateHolder signerCertificate =
+                requireUploadCertificateSigner(publicKey, authenticatedCountry, verificationMethodId);
+        uploaderCertificate.set(signerCertificate);
 
         boolean verified = verifyProof(trustedUploadDidDocumentDto, publicKey, verificationMethodId);
 
@@ -477,7 +501,8 @@ public class TrustedDidController {
                 throw new DgcgResponseException(HttpStatus.BAD_REQUEST, "0x303", "Invalid Country Code",
                         verificationMethodId, e.getMessage());
             }
-            storedCertificates = storeUploadedDidDocument(trustedUploadDidDocumentDto, verificationMethodId);
+            storedCertificates = storeUploadedDidDocument(trustedUploadDidDocumentDto, signerCertificate,
+                    verificationMethodId);
         }
 
         boolean stored = storedCertificates > 0;
@@ -504,6 +529,27 @@ public class TrustedDidController {
                     "No authentication information available", "",
                     "An authenticated country is required to modify trusted DID data.");
         }
+    }
+
+    /**
+     * Binds the key which signed the DID proof to the authenticated country's UPLOAD certificate.
+     *
+     * <p>Equivalent to the CMS requirement that the CMS signer is the country's UPLOAD certificate: only the
+     * participant itself may sign DID documents it uploads or deletes. Proofs signed by any other key (including
+     * keys of other countries or third parties) are rejected before anything is stored or deleted.
+     *
+     * @return the UPLOAD certificate holding the proof key
+     */
+    private X509CertificateHolder requireUploadCertificateSigner(PublicKey publicKey, String authenticatedCountry,
+                                                                 String verificationMethodId) {
+        return signerInformationService.findUploadCertificateByPublicKey(authenticatedCountry, publicKey)
+                .orElseThrow(() -> {
+                    log.warn("DID proof of verification method {} is not signed with an UPLOAD certificate "
+                            + "of country {}", verificationMethodId, authenticatedCountry);
+                    return new DgcgResponseException(HttpStatus.FORBIDDEN, "0x308",
+                            "DID Proof Signer Not Authorized", verificationMethodId,
+                            "The proof must be signed with the authenticated country's UPLOAD certificate key.");
+                });
     }
 
     /**
@@ -634,22 +680,25 @@ public class TrustedDidController {
      * Stores the certificates of a successfully verified DID document as signer information.
      *
      * @param trustedUploadDidDocumentDto the verified DID document to store
+     * @param signerCertificate           the UPLOAD certificate holding the key which signed the proof
      * @param verificationMethodId        the id of the verification method (used for error reporting)
      * @return the number of certificates which have been stored as signer information
      */
     private int storeUploadedDidDocument(TrustedUploadDidDocumentDto trustedUploadDidDocumentDto,
+                                         X509CertificateHolder signerCertificate,
                                          String verificationMethodId) {
         try {
-            List<SignerInformationEntity> storedEntities =
-                    signerInformationService.addDidSignerCertificates(trustedUploadDidDocumentDto);
+            List<SignerInformationEntity> storedEntities = signerInformationService.addDidSignerCertificates(
+                    trustedUploadDidDocumentDto, signerCertificate);
 
             log.info("Stored {} SignerInformation entries from uploaded DID document for verification method {}",
                     storedEntities.size(), verificationMethodId);
 
             return storedEntities.size();
         } catch (SignerInformationService.SignerCertCheckException e) {
-            log.error("Failed to store uploaded DID document for verification method {}: {}",
-                    verificationMethodId, e.getMessage());
+            DgcMdc.put(MDC_VERIFICATION_ERROR_REASON, e.getReason().toString());
+            DgcMdc.put(MDC_VERIFICATION_ERROR_MESSAGE, e.getMessage());
+            log.error("Failed to store uploaded DID document for verification method {}", verificationMethodId);
             throw new DgcgResponseException(HttpStatus.BAD_REQUEST, "0x303", "DID Upload Storage Error",
                     verificationMethodId, e.getMessage());
         }

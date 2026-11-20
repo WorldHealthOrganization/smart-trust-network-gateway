@@ -51,9 +51,11 @@ import eu.europa.ec.dgc.gateway.testdata.CertificateTestUtils;
 import eu.europa.ec.dgc.gateway.testdata.DidTestHelper;
 import eu.europa.ec.dgc.gateway.testdata.TrustedPartyTestHelper;
 import eu.europa.ec.dgc.utils.CertificateUtils;
+import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.PublicKey;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
 import java.time.ZonedDateTime;
@@ -66,6 +68,7 @@ import org.bouncycastle.cert.X509CertificateHolder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -138,12 +141,14 @@ class TrustedDidUploadIntegrationTest {
     private String encodedUploadedCertificate;
     private String uploadedKid;
     private String authenticatedCountry;
+    private ECPublicKey proofPublicKeyOverride;
 
     @BeforeEach
     void setup() throws Exception {
         signerInformationRepository.deleteAll();
         uploadedKid = UPLOADED_KID;
         authenticatedCountry = COUNTRY;
+        proofPublicKeyOverride = null;
         // The standalone setup bypasses the authentication filter; only the thumbprint is provided so the
         // country attribute stays absent to verify that requests without authenticated country are rejected.
         localMockMvc = MockMvcBuilders.standaloneSetup(trustedDidController)
@@ -162,10 +167,89 @@ class TrustedDidUploadIntegrationTest {
 
         KeyPair uploadedKeyPair = DidTestHelper.generateEcKeyPair();
         uploadedPublicKey = (ECPublicKey) uploadedKeyPair.getPublic();
-        uploadedCertificate = CertificateTestUtils.generateCertificate(uploadedKeyPair, COUNTRY, "DSC to import");
+        uploadedCertificate = generateCscaSignedCertificate(uploadedKeyPair, COUNTRY, "DSC to import");
         encodedUploadedCertificate = Base64.getEncoder().encodeToString(uploadedCertificate.getEncoded());
 
         mockDidResolution();
+    }
+
+    /**
+     * Replaces the uploaded certificate by one issued for the given country and signed by its onboarded CSCA.
+     */
+    private void useUploadedCertificateFor(String country) throws Exception {
+        KeyPair keyPair = DidTestHelper.generateEcKeyPair();
+        uploadedPublicKey = (ECPublicKey) keyPair.getPublic();
+        uploadedCertificate = generateCscaSignedCertificate(keyPair, country, "DSC to import");
+        encodedUploadedCertificate = Base64.getEncoder().encodeToString(uploadedCertificate.getEncoded());
+    }
+
+    private X509Certificate generateCscaSignedCertificate(KeyPair keyPair, String country, String commonName)
+        throws Exception {
+        return CertificateTestUtils.generateCertificate(keyPair, country, commonName,
+            trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.CSCA, country),
+            trustedPartyTestHelper.getPrivateKey(TrustedPartyEntity.CertificateType.CSCA, country));
+    }
+
+    private void onboardTngCsca() throws Exception {
+        trustedPartyTestHelper.insertCertificate(TrustedPartyEntity.CertificateType.CSCA, "AD",
+            (X509Certificate) CertificateFactory.getInstance("X.509")
+                .generateCertificate(new ByteArrayInputStream(Base64.getDecoder().decode(TNG_CSCA))));
+    }
+
+    @Test
+    void testCountryOfOriginMismatchIsRejected() throws Exception {
+        when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
+        KeyPair keyPair = DidTestHelper.generateEcKeyPair();
+        uploadedPublicKey = (ECPublicKey) keyPair.getPublic();
+        X509Certificate foreignCertificate = CertificateTestUtils.generateCertificate(keyPair, "FR", "Foreign DSC",
+            trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.CSCA, COUNTRY),
+            trustedPartyTestHelper.getPrivateKey(TrustedPartyEntity.CertificateType.CSCA, COUNTRY));
+
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
+                .contentType(MediaType.valueOf("application/did"))
+                .content(buildUploadDidDocument(Base64.getEncoder().encodeToString(foreignCertificate.getEncoded()),
+                    "\"participant\": {\"code\": \"DE\"},")))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.details").value(
+                org.hamcrest.Matchers.containsString("not issued for uploader country")));
+
+        Assertions.assertTrue(signerInformationRepository.findAll().isEmpty());
+    }
+
+    @Test
+    void testCertificateNotSignedByOnboardedCscaIsRejected() throws Exception {
+        when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
+        KeyPair keyPair = DidTestHelper.generateEcKeyPair();
+        uploadedPublicKey = (ECPublicKey) keyPair.getPublic();
+        X509Certificate selfSignedCertificate =
+            CertificateTestUtils.generateCertificate(keyPair, COUNTRY, "Self-signed DSC");
+
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
+                .contentType(MediaType.valueOf("application/did"))
+                .content(buildUploadDidDocument(
+                    Base64.getEncoder().encodeToString(selfSignedCertificate.getEncoded()),
+                    "\"participant\": {\"code\": \"DE\"},")))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.details").value(org.hamcrest.Matchers.containsString("signed by valid CSCA")));
+
+        Assertions.assertTrue(signerInformationRepository.findAll().isEmpty());
+    }
+
+    @Test
+    void testDomainNotInAllowListIsRejected() throws Exception {
+        when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
+
+        for (String domainProperty : List.of("\"domain\": {\"code\": \"#DDCC\"},", "")) {
+            String path = domainProperty.isEmpty() ? "/trusted-did/DDCC/DE/DSC" : UPLOAD_PATH;
+            mockMvc.perform(authenticated(put(path))
+                    .contentType(MediaType.valueOf("application/did"))
+                    .content(buildUploadDidDocument(encodedUploadedCertificate,
+                        domainProperty + "\"participant\": {\"code\": \"DE\"},")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.details").value(org.hamcrest.Matchers.containsString("DDCC is not allowed")));
+        }
+
+        Assertions.assertTrue(signerInformationRepository.findAll().isEmpty());
     }
 
     @Test
@@ -254,14 +338,82 @@ class TrustedDidUploadIntegrationTest {
     void testDidDocumentOfNotOnboardedParticipantIsRejected() throws Exception {
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
         authenticatedCountry = "XY";
+        // XY has no UPLOAD certificate, so no key can be bound to it
+        proofPublicKeyOverride = (ECPublicKey) DidTestHelper.generateEcKeyPair().getPublic();
 
         mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(buildUploadDidDocument(encodedUploadedCertificate, "\"participant\": {\"code\": \"XY\"},")))
-            .andExpect(status().isBadRequest());
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.code").value("0x308"));
 
         Assertions.assertTrue(signerInformationRepository.findAll().isEmpty(),
             "Nothing must be stored for a participant without upload certificate.");
+    }
+
+    @Test
+    void testProofNotSignedWithUploadKeyIsRejected() throws Exception {
+        auditEventRepository.deleteAll();
+        when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
+        proofPublicKeyOverride = (ECPublicKey) DidTestHelper.generateEcKeyPair().getPublic();
+
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
+                .contentType(MediaType.valueOf("application/did"))
+                .content(buildUploadDidDocument(encodedUploadedCertificate, "\"participant\": {\"code\": \"DE\"},")))
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.code").value("0x308"));
+
+        Assertions.assertTrue(signerInformationRepository.findAll().isEmpty());
+        Assertions.assertEquals(List.of(TrustedDidController.AUDIT_EVENT_UPLOAD_FAILED),
+            auditEventRepository.findAll().stream().map(AuditEventEntity::getEvent).collect(Collectors.toList()));
+        Mockito.verify(didVerificationService, Mockito.never()).verify(anyString(), any(PublicKey.class));
+    }
+
+    @Test
+    void testProofSignedWithAnotherCountrysUploadKeyIsRejected() throws Exception {
+        when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
+        proofPublicKeyOverride = (ECPublicKey) trustedPartyTestHelper.getCert(
+            TrustedPartyEntity.CertificateType.UPLOAD, "FR").getPublicKey();
+
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
+                .contentType(MediaType.valueOf("application/did"))
+                .content(buildUploadDidDocument(encodedUploadedCertificate, "\"participant\": {\"code\": \"DE\"},")))
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.code").value("0x308"));
+
+        Assertions.assertTrue(signerInformationRepository.findAll().isEmpty());
+    }
+
+    @Test
+    void testProofSignedWithAnyValidUploadKeyOfCountryIsAccepted() throws Exception {
+        when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
+        // Second UPLOAD certificate of the same country, e.g. during rollover
+        proofPublicKeyOverride = (ECPublicKey) trustedPartyTestHelper.getTestCert("rollover",
+            TrustedPartyEntity.CertificateType.UPLOAD, COUNTRY, ZonedDateTime.now()).getPublicKey();
+
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
+                .contentType(MediaType.valueOf("application/did"))
+                .content(buildUploadDidDocument(encodedUploadedCertificate, "\"participant\": {\"code\": \"DE\"},")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.storedCertificates").value(1));
+    }
+
+    @Test
+    void testDeleteWithProofNotSignedWithUploadKeyIsRejected() throws Exception {
+        when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
+        mockMvc.perform(authenticated(put(UPLOAD_PATH))
+                .contentType(MediaType.valueOf("application/did"))
+                .content(buildUploadDidDocument(encodedUploadedCertificate, "\"participant\": {\"code\": \"DE\"},")))
+            .andExpect(status().isOk());
+
+        proofPublicKeyOverride = (ECPublicKey) DidTestHelper.generateEcKeyPair().getPublic();
+
+        mockMvc.perform(authenticated(deleteWithDocument(UPLOAD_PATH)))
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.code").value("0x308"));
+
+        Assertions.assertEquals(1, signerInformationRepository.findAll().size(),
+            "Nothing must be deleted when the proof is not signed with the UPLOAD key.");
     }
 
     @Test
@@ -269,6 +421,7 @@ class TrustedDidUploadIntegrationTest {
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
         trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.UPLOAD, "XA");
         authenticatedCountry = "XA";
+        useUploadedCertificateFor("XA");
 
         mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
@@ -288,6 +441,7 @@ class TrustedDidUploadIntegrationTest {
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
         trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.UPLOAD, "XA");
         authenticatedCountry = "XA";
+        useUploadedCertificateFor("XA");
 
         // TNG publishes the participant code as DID fragment reference, e.g. "#XXA"
         mockMvc.perform(authenticated(put(UPLOAD_PATH))
@@ -322,6 +476,7 @@ class TrustedDidUploadIntegrationTest {
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
         trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.UPLOAD, "XA");
         authenticatedCountry = "XA";
+        useUploadedCertificateFor("XA");
 
         String codedValues = """
             "domain": {"code": "#DCC"},
@@ -346,9 +501,10 @@ class TrustedDidUploadIntegrationTest {
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
         trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.UPLOAD, "XA");
         authenticatedCountry = "XA";
+        useUploadedCertificateFor("XA");
 
         // Document carries no domain/participant/keyusage at all
-        mockMvc.perform(authenticated(put("/trusted-did/DDCC/XXA/CSCA"))
+        mockMvc.perform(authenticated(put("/trusted-did/PH4H/XXA/CSCA"))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(buildUploadDidDocument(encodedUploadedCertificate, "")))
             .andExpect(status().isOk())
@@ -357,7 +513,7 @@ class TrustedDidUploadIntegrationTest {
         List<SignerInformationEntity> stored = signerInformationRepository.findAll();
         Assertions.assertEquals(1, stored.size(), "Path variables were not applied.");
         Assertions.assertEquals("XA", stored.get(0).getCountry());
-        Assertions.assertEquals("DDCC", stored.get(0).getDomain());
+        Assertions.assertEquals("PH4H", stored.get(0).getDomain());
         Assertions.assertEquals(SignerInformationEntity.SourceType.DID, stored.get(0).getSourceType());
     }
 
@@ -451,7 +607,7 @@ class TrustedDidUploadIntegrationTest {
         mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(buildUploadDidDocument(encodedUploadedCertificate,
-                    "\"domain\": {\"code\": \"#DDCC\"}, \"participant\": {\"code\": \"DE\"},")))
+                    "\"domain\": {\"code\": \"#PH4H\"}, \"participant\": {\"code\": \"DE\"},")))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.stored").value(true))
             .andExpect(jsonPath("$.storedCertificates").value(1));
@@ -464,7 +620,7 @@ class TrustedDidUploadIntegrationTest {
         Assertions.assertEquals(first.getUuid(), replaced.getUuid());
         Assertions.assertEquals(first.getVersion() + 1, replaced.getVersion(), "Version must be increased.");
         Assertions.assertTrue(replaced.getCreatedAt().isAfter(firstCreatedAt), "created_at must be reset.");
-        Assertions.assertEquals("DDCC", replaced.getDomain(), "Values of the latest upload must be stored.");
+        Assertions.assertEquals("PH4H", replaced.getDomain(), "Values of the latest upload must be stored.");
         Assertions.assertEquals(SignerInformationEntity.SourceType.DID, replaced.getSourceType());
     }
 
@@ -486,7 +642,7 @@ class TrustedDidUploadIntegrationTest {
         mockMvc.perform(authenticated(put(UPLOAD_PATH))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(buildUploadDidDocument(encodedUploadedCertificate,
-                    "\"domain\": {\"code\": \"#DDCC\"}, \"participant\": {\"code\": \"DE\"},")))
+                    "\"domain\": {\"code\": \"#PH4H\"}, \"participant\": {\"code\": \"DE\"},")))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.stored").value(true))
             .andExpect(jsonPath("$.storedCertificates").value(1));
@@ -499,7 +655,7 @@ class TrustedDidUploadIntegrationTest {
         Assertions.assertFalse(signerInformationRepository.findById(cmsEntity.getId()).isPresent());
         Assertions.assertEquals(SignerInformationEntity.SourceType.DID, didEntity.getSourceType());
         Assertions.assertEquals(1, didEntity.getVersion());
-        Assertions.assertEquals("DDCC", didEntity.getDomain());
+        Assertions.assertEquals("PH4H", didEntity.getDomain());
         Assertions.assertEquals(UPLOADED_KID, didEntity.getKid(), "CMS KID must be replaced by the JWK kid.");
         Assertions.assertNotEquals("cms-signature", didEntity.getSignature());
     }
@@ -520,6 +676,7 @@ class TrustedDidUploadIntegrationTest {
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
         trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.UPLOAD, "AD");
         authenticatedCountry = "AD";
+        onboardTngCsca();
         mockDidResolution(TNG_PROOF_VERIFICATION_METHOD);
 
         String didDocument = readResource("did/tng-multi-verification-method-did.json");
@@ -565,6 +722,7 @@ class TrustedDidUploadIntegrationTest {
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
         trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.UPLOAD, "AD");
         authenticatedCountry = "AD";
+        onboardTngCsca();
         mockDidResolution(TNG_PROOF_VERIFICATION_METHOD);
 
         String didDocument = readResource("did/tng-multi-verification-method-did.json");
@@ -675,9 +833,10 @@ class TrustedDidUploadIntegrationTest {
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
         trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.UPLOAD, "XA");
         authenticatedCountry = "XA";
+        useUploadedCertificateFor("XA");
         String firstCertificate = encodedUploadedCertificate;
 
-        mockMvc.perform(authenticated(put("/trusted-did/DDCC/XXA/CSCA"))
+        mockMvc.perform(authenticated(put("/trusted-did/PH4H/XXA/CSCA"))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(buildUploadDidDocument(firstCertificate, "")))
             .andExpect(status().isOk());
@@ -686,31 +845,31 @@ class TrustedDidUploadIntegrationTest {
         KeyPair secondKeyPair = DidTestHelper.generateEcKeyPair();
         uploadedPublicKey = (ECPublicKey) secondKeyPair.getPublic();
         String secondCertificate = Base64.getEncoder().encodeToString(
-            CertificateTestUtils.generateCertificate(secondKeyPair, COUNTRY, "Second DSC").getEncoded());
+            generateCscaSignedCertificate(secondKeyPair, "XA", "Second DSC").getEncoded());
         encodedUploadedCertificate = secondCertificate;
 
         uploadedKid = "jwk-kid-2";
 
-        mockMvc.perform(authenticated(put("/trusted-did/DDCC/XXA/CSCA"))
+        mockMvc.perform(authenticated(put("/trusted-did/PH4H/XXA/CSCA"))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(buildUploadDidDocument(secondCertificate, "")))
             .andExpect(status().isOk());
         Assertions.assertEquals(2, signerInformationRepository.findAll().size());
 
         // Only the certificate listed in the x5c of the submitted document is deleted
-        mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/ddcc/xxa/csca")))
+        mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/ph4h/xxa/csca")))
             .andExpect(status().isNoContent());
         List<SignerInformationEntity> remaining = signerInformationRepository.findAll();
         Assertions.assertEquals(1, remaining.size(), "Only the x5c certificate of the document must be deleted.");
         Assertions.assertEquals(firstCertificate, remaining.get(0).getRawData());
 
-        mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/DDCC/XXA/CSCA")))
+        mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/PH4H/XXA/CSCA")))
             .andExpect(status().isNotFound());
         Assertions.assertEquals(1, signerInformationRepository.findAll().size());
 
         // Every x5c entry of the document is considered
         encodedUploadedCertificate = secondCertificate + "\", \"" + firstCertificate;
-        mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/DDCC/XXA/CSCA")))
+        mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/PH4H/XXA/CSCA")))
             .andExpect(status().isNoContent());
         Assertions.assertTrue(signerInformationRepository.findAll().isEmpty());
     }
@@ -761,6 +920,9 @@ class TrustedDidUploadIntegrationTest {
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
         String authThumbprint = trustedPartyTestHelper.getHash(
             TrustedPartyEntity.CertificateType.AUTHENTICATION, authenticatedCountry);
+        String uploadThumbprint = trustedPartyTestHelper.getHash(
+            TrustedPartyEntity.CertificateType.UPLOAD, authenticatedCountry);
+        Assertions.assertNotEquals(authThumbprint, uploadThumbprint);
 
         mockMvc.perform(authenticated(put("/trusted-did/DCC/DE/DSC"))
                 .contentType(MediaType.valueOf("application/did"))
@@ -796,7 +958,7 @@ class TrustedDidUploadIntegrationTest {
         for (AuditEventEntity event : events) {
             Assertions.assertEquals(COUNTRY, event.getCountry());
             Assertions.assertEquals(authThumbprint, event.getAuthenticationSha256Fingerprint());
-            Assertions.assertEquals(authThumbprint, event.getUploaderSha256Fingerprint());
+            Assertions.assertEquals(uploadThumbprint, event.getUploaderSha256Fingerprint());
             Assertions.assertFalse(event.getDescription().contains("did:"), "DIDs must not be audited.");
             Assertions.assertFalse(event.getDescription().contains(encodedUploadedCertificate));
             Assertions.assertFalse(event.getDescription().contains(UPLOADED_KID));
@@ -950,16 +1112,17 @@ class TrustedDidUploadIntegrationTest {
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
         trustedPartyTestHelper.getCert(TrustedPartyEntity.CertificateType.UPLOAD, "XA");
         authenticatedCountry = "XA";
+        useUploadedCertificateFor("XA");
 
-        mockMvc.perform(authenticated(put("/trusted-did/DDCC/XXA/CSCA"))
+        mockMvc.perform(authenticated(put("/trusted-did/PH4H/XXA/CSCA"))
                 .contentType(MediaType.valueOf("application/did"))
                 .content(buildUploadDidDocument(encodedUploadedCertificate, "")))
             .andExpect(status().isOk());
 
-        mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/DDCC/XXA/DSC"))).andExpect(status().isNotFound());
+        mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/PH4H/XXA/DSC"))).andExpect(status().isNotFound());
         mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/DCC/XXA/CSCA"))).andExpect(status().isNotFound());
-        mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/DDCC/DEU/CSCA"))).andExpect(status().isForbidden());
-        mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/DDCC/INVALID/CSCA"))).andExpect(status().isBadRequest());
+        mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/PH4H/DEU/CSCA"))).andExpect(status().isForbidden());
+        mockMvc.perform(authenticated(deleteWithDocument("/trusted-did/PH4H/INVALID/CSCA"))).andExpect(status().isBadRequest());
 
         Assertions.assertEquals(1, signerInformationRepository.findAll().size(),
             "Non matching certificates must not be deleted.");
@@ -977,25 +1140,39 @@ class TrustedDidUploadIntegrationTest {
     }
 
     private void mockDidResolution(String verificationMethodId) throws Exception {
-        KeyPair proofKeyPair = DidTestHelper.generateEcKeyPair();
-        ECPublicKey proofPublicKey = (ECPublicKey) proofKeyPair.getPublic();
+        when(didResolver.resolve(anyString())).thenAnswer(invocation -> {
+            // By default the proof is signed with the authenticated country's UPLOAD key
+            ECPublicKey proofPublicKey = proofPublicKeyOverride != null
+                ? proofPublicKeyOverride
+                : (ECPublicKey) trustedPartyTestHelper.getCert(
+                    TrustedPartyEntity.CertificateType.UPLOAD, authenticatedCountry).getPublicKey();
 
-        VerificationMethod verificationMethod = new VerificationMethod();
-        verificationMethod.setId(verificationMethodId);
-        verificationMethod.setType("JsonWebKey2020");
-        verificationMethod.setController(DID);
-        verificationMethod.setPublicKeyJwk(Map.of(
-            "kty", "EC",
-            "crv", "P-256",
-            "x", DidTestHelper.encodeCoordinate(proofPublicKey.getW().getAffineX()),
-            "y", DidTestHelper.encodeCoordinate(proofPublicKey.getW().getAffineY())
-        ));
+            VerificationMethod verificationMethod = new VerificationMethod();
+            verificationMethod.setId(verificationMethodId);
+            verificationMethod.setType("JsonWebKey2020");
+            verificationMethod.setController(DID);
+            verificationMethod.setPublicKeyJwk(Map.of(
+                "kty", "EC",
+                "crv", "P-" + proofPublicKey.getParams().getCurve().getField().getFieldSize(),
+                "x", encodeCoordinate(proofPublicKey, proofPublicKey.getW().getAffineX()),
+                "y", encodeCoordinate(proofPublicKey, proofPublicKey.getW().getAffineY())
+            ));
 
-        DidDocument resolvedDidDocument = new DidDocument();
-        resolvedDidDocument.setId(DID);
-        resolvedDidDocument.setVerificationMethod(List.of(verificationMethod));
+            DidDocument resolvedDidDocument = new DidDocument();
+            resolvedDidDocument.setId(DID);
+            resolvedDidDocument.setVerificationMethod(List.of(verificationMethod));
 
-        when(didResolver.resolve(anyString())).thenReturn(DidResolutionResult.success(resolvedDidDocument));
+            return DidResolutionResult.success(resolvedDidDocument);
+        });
+    }
+
+    private static String encodeCoordinate(ECPublicKey key, java.math.BigInteger value) {
+        int length = (key.getParams().getCurve().getField().getFieldSize() + 7) / 8;
+        byte[] bytes = value.toByteArray();
+        byte[] coordinate = new byte[length];
+        int copy = Math.min(bytes.length, length);
+        System.arraycopy(bytes, bytes.length - copy, coordinate, length - copy, copy);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(coordinate);
     }
 
     private String buildUploadDidDocument(String encodedCertificate, String participantProperty) {
