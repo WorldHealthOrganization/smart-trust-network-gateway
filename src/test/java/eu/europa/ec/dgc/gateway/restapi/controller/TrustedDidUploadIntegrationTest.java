@@ -920,6 +920,9 @@ class TrustedDidUploadIntegrationTest {
         when(didVerificationService.verify(anyString(), any(PublicKey.class))).thenReturn(true);
         String authThumbprint = trustedPartyTestHelper.getHash(
             TrustedPartyEntity.CertificateType.AUTHENTICATION, authenticatedCountry);
+        String uploadThumbprint = trustedPartyTestHelper.getHash(
+            TrustedPartyEntity.CertificateType.UPLOAD, authenticatedCountry);
+        Assertions.assertNotEquals(authThumbprint, uploadThumbprint);
 
         mockMvc.perform(authenticated(put("/trusted-did/DCC/DE/DSC"))
                 .contentType(MediaType.valueOf("application/did"))
@@ -955,7 +958,7 @@ class TrustedDidUploadIntegrationTest {
         for (AuditEventEntity event : events) {
             Assertions.assertEquals(COUNTRY, event.getCountry());
             Assertions.assertEquals(authThumbprint, event.getAuthenticationSha256Fingerprint());
-            Assertions.assertEquals(authThumbprint, event.getUploaderSha256Fingerprint());
+            Assertions.assertEquals(uploadThumbprint, event.getUploaderSha256Fingerprint());
             Assertions.assertFalse(event.getDescription().contains("did:"), "DIDs must not be audited.");
             Assertions.assertFalse(event.getDescription().contains(encodedUploadedCertificate));
             Assertions.assertFalse(event.getDescription().contains(UPLOADED_KID));

@@ -55,6 +55,7 @@ import java.text.ParseException;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -317,24 +318,26 @@ public class TrustedDidController {
             @RequestAttribute(CertificateAuthenticationFilter.REQUEST_PROP_THUMBPRINT)
             String authThumbprint) {
 
+        AtomicReference<X509CertificateHolder> uploaderCertificate = new AtomicReference<>();
         int deletedCertificates;
         try {
             deletedCertificates = processDelete(trustedUploadDidDocumentDto, domain, country, type,
-                    authenticatedCountry);
+                    authenticatedCountry, uploaderCertificate);
         } catch (RuntimeException e) {
-            addAuditEvent(authenticatedCountry, authThumbprint, AUDIT_EVENT_DELETE_FAILED,
-                    "deleteTrustedDid failed with HTTP " + statusOf(e));
+            addAuditEvent(authenticatedCountry, uploaderCertificate.get(), authThumbprint,
+                    AUDIT_EVENT_DELETE_FAILED, "deleteTrustedDid failed with HTTP " + statusOf(e));
             throw e;
         }
 
-        addAuditEvent(authenticatedCountry, authThumbprint, AUDIT_EVENT_DELETED,
+        addAuditEvent(authenticatedCountry, uploaderCertificate.get(), authThumbprint, AUDIT_EVENT_DELETED,
                 String.format("deleteTrustedDid deleted %d certificate(s)", deletedCertificates));
 
         return ResponseEntity.noContent().build();
     }
 
     private int processDelete(TrustedUploadDidDocumentDto trustedUploadDidDocumentDto, String domain,
-                              String country, String type, String authenticatedCountry) {
+                              String country, String type, String authenticatedCountry,
+                              AtomicReference<X509CertificateHolder> uploaderCertificate) {
         requireAuthenticatedCountry(authenticatedCountry);
         String criteria = String.format("domain=%s, country=%s, type=%s", domain, country, type);
         log.info("Requested deletion of trusted DID certificates ({})", criteria);
@@ -346,7 +349,7 @@ public class TrustedDidController {
                     criteria, e.getMessage());
         }
 
-        requireVerifiedProof(trustedUploadDidDocumentDto, authenticatedCountry);
+        requireVerifiedProof(trustedUploadDidDocumentDto, authenticatedCountry, uploaderCertificate);
 
         int deletedCertificates;
         try {
@@ -375,15 +378,17 @@ public class TrustedDidController {
 
     /**
      * Resolves the proof's verification method and rejects the request unless the proof was signed with the
-     * authenticated country's UPLOAD key and is valid.
+     * authenticated country's UPLOAD key and is valid. The resolved UPLOAD certificate is published to
+     * {@code uploaderCertificate} for auditing.
      */
     private void requireVerifiedProof(TrustedUploadDidDocumentDto trustedUploadDidDocumentDto,
-                                      String authenticatedCountry) {
+                                      String authenticatedCountry,
+                                      AtomicReference<X509CertificateHolder> uploaderCertificate) {
         String verificationMethodId = trustedUploadDidDocumentDto.getProof().getVerificationMethod();
         DidDocument didDocument = DidResolutionUtils.resolveOrThrow(didResolver, verificationMethodId);
         PublicKey publicKey = toPublicKey(extractJwk(didDocument, verificationMethodId), verificationMethodId);
 
-        requireUploadCertificateSigner(publicKey, authenticatedCountry, verificationMethodId);
+        uploaderCertificate.set(requireUploadCertificateSigner(publicKey, authenticatedCountry, verificationMethodId));
 
         if (!verifyProof(trustedUploadDidDocumentDto, publicKey, verificationMethodId)) {
             throw new DgcgResponseException(HttpStatus.BAD_REQUEST, "0x307", "DID Proof Verification Failed",
@@ -399,23 +404,24 @@ public class TrustedDidController {
             String authenticatedCountry,
             String authThumbprint) {
 
+        AtomicReference<X509CertificateHolder> uploaderCertificate = new AtomicReference<>();
         ResponseEntity<TrustedDidPublicKeyDto> response;
         try {
             response = processUpload(trustedUploadDidDocumentDto, domain, participant, keyusage,
-                    authenticatedCountry);
+                    authenticatedCountry, uploaderCertificate);
         } catch (RuntimeException e) {
-            addAuditEvent(authenticatedCountry, authThumbprint, AUDIT_EVENT_UPLOAD_FAILED,
-                    "uploadTrustedDid failed with HTTP " + statusOf(e));
+            addAuditEvent(authenticatedCountry, uploaderCertificate.get(), authThumbprint,
+                    AUDIT_EVENT_UPLOAD_FAILED, "uploadTrustedDid failed with HTTP " + statusOf(e));
             throw e;
         }
 
         TrustedDidPublicKeyDto body = response.getBody();
         if (body != null && body.isVerified()) {
-            addAuditEvent(authenticatedCountry, authThumbprint, AUDIT_EVENT_UPLOADED,
+            addAuditEvent(authenticatedCountry, uploaderCertificate.get(), authThumbprint, AUDIT_EVENT_UPLOADED,
                     String.format("uploadTrustedDid stored %d certificate(s)", body.getStoredCertificates()));
         } else {
-            addAuditEvent(authenticatedCountry, authThumbprint, AUDIT_EVENT_NOT_VERIFIED,
-                    "uploadTrustedDid proof not verified, nothing stored");
+            addAuditEvent(authenticatedCountry, uploaderCertificate.get(), authThumbprint,
+                    AUDIT_EVENT_NOT_VERIFIED, "uploadTrustedDid proof not verified, nothing stored");
         }
         return response;
     }
@@ -423,16 +429,23 @@ public class TrustedDidController {
     /**
      * Persists an audit event for a trusted DID operation.
      *
-     * <p>Only the authenticated country, the authentication certificate thumbprint, a fixed event id and a
-     * fixed description (optionally containing counters or HTTP status codes) are recorded. Request content such
-     * as DID documents, DIDs, verification method ids, keys, certificates or path variables is never persisted.
-     * As no separate uploader certificate exists for DID uploads, the authentication thumbprint is used as
-     * uploader fingerprint.
+     * <p>Only the authenticated country, the uploader and authentication certificate thumbprints, a fixed event
+     * id and a fixed description (optionally containing counters or HTTP status codes) are recorded. Request
+     * content such as DID documents, DIDs, verification method ids, keys, certificates or path variables is never
+     * persisted. The uploader is the country's UPLOAD certificate holding the key which signed the DID proof; if
+     * the request failed before it could be resolved, the authentication thumbprint is used as uploader
+     * fingerprint (the column is mandatory).
      */
-    private void addAuditEvent(String authenticatedCountry, String authThumbprint, String event,
-                               String description) {
+    private void addAuditEvent(String authenticatedCountry, X509CertificateHolder uploaderCertificate,
+                               String authThumbprint, String event, String description) {
         try {
-            auditService.addAuditEvent(authenticatedCountry, authThumbprint, authThumbprint, event, description);
+            if (uploaderCertificate != null) {
+                auditService.addAuditEvent(authenticatedCountry, uploaderCertificate, authThumbprint, event,
+                        description);
+            } else {
+                auditService.addAuditEvent(authenticatedCountry, authThumbprint, authThumbprint, event,
+                        description);
+            }
         } catch (RuntimeException e) {
             log.error("Failed to persist trusted DID audit event {}: {}", event, e.getClass().getSimpleName());
         }
@@ -449,7 +462,8 @@ public class TrustedDidController {
             String domain,
             String participant,
             String keyusage,
-            String authenticatedCountry) {
+            String authenticatedCountry,
+            AtomicReference<X509CertificateHolder> uploaderCertificate) {
 
         requireAuthenticatedCountry(authenticatedCountry);
         String verificationMethodId = trustedUploadDidDocumentDto.getProof().getVerificationMethod();
@@ -465,6 +479,7 @@ public class TrustedDidController {
 
         X509CertificateHolder signerCertificate =
                 requireUploadCertificateSigner(publicKey, authenticatedCountry, verificationMethodId);
+        uploaderCertificate.set(signerCertificate);
 
         boolean verified = verifyProof(trustedUploadDidDocumentDto, publicKey, verificationMethodId);
 
