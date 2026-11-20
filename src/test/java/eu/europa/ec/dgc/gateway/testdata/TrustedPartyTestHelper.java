@@ -121,6 +121,17 @@ public class TrustedPartyTestHelper {
         privateKeyMap.get(type).remove(countryCode);
     }
 
+    /**
+     * Onboards an existing certificate (e.g. a real CSCA) unless it is already present in DB.
+     */
+    public void insertCertificate(TrustedPartyEntity.CertificateType type, String countryCode,
+                                  X509Certificate certificate) throws Exception {
+        if (trustedPartyRepository.getFirstByThumbprintAndCertificateType(
+            certificateUtils.getCertThumbprint(certificate), type).isEmpty()) {
+            insertCert(type, countryCode, null, certificate);
+        }
+    }
+
     private void prepareTestCert(TrustedPartyEntity.CertificateType type, String countryCode,
                                  CertificateTestUtils.SignerType signerType) throws Exception {
         // Check if a test certificate already exists

@@ -33,6 +33,7 @@ import eu.europa.ec.dgc.utils.CertificateUtils;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
@@ -342,16 +343,23 @@ public class SignerInformationService {
      * RFC 7517 section 4.7 the first entry of the {@code x5c} property is the certificate containing the key of the
      * JWK, all further entries form its certificate chain (e.g. the CSCA). Therefore exactly one entry is created per
      * verification method, based on {@code x5c[0]}. The country is taken from the participant code of the
-     * verification method, the signer certificate is the upload certificate (UP.pem) of that participant and the
-     * signature is the Base64 encoded representation of the uploaded DID document.
+     * verification method, the signer certificate is the UPLOAD certificate holding the key which signed the DID
+     * proof and the signature is the Base64 encoded representation of the uploaded DID document.
      *
-     * @param didDocument the verified DID document to persist
+     * <p>Like CMS uploads of DSCs, {@code x5c[0]} must pass the threat, uploader certificate, country of origin,
+     * domain allow-list and CSCA checks: the proof signer must be an UPLOAD certificate of the participant, its
+     * subject country must match the participant, the domain must be one of the configured allowed domains and it
+     * must be signed by a CSCA onboarded for the participant.
+     *
+     * @param didDocument       the verified DID document to persist
+     * @param signerCertificate the UPLOAD certificate holding the key which signed the DID proof
      * @return the created or replaced entities, one per distinct certificate
      * @throws SignerCertCheckException if validation check has failed. The exception contains
      *                                  a reason property with detailed information why the validation has failed.
      */
     @Transactional(rollbackFor = SignerCertCheckException.class)
-    public List<SignerInformationEntity> addDidSignerCertificates(TrustedUploadDidDocumentDto didDocument)
+    public List<SignerInformationEntity> addDidSignerCertificates(TrustedUploadDidDocumentDto didDocument,
+                                                                  X509CertificateHolder signerCertificate)
         throws SignerCertCheckException {
 
         String signature = encodeDidDocumentAsSignature(didDocument);
@@ -361,7 +369,6 @@ public class SignerInformationService {
             String countryCode = resolveParticipantCountryCode(verificationMethod);
             String domain = resolveDomain(verificationMethod);
             String keyUsage = resolveKeyUsage(verificationMethod);
-            X509CertificateHolder signerCertificate = getUploadCertificate(countryCode);
 
             TrustedUploadDidDocumentDto.PublicKeyJwk publicKeyJwk = verificationMethod.getPublicKeyJwk();
             String encodedCertificate = publicKeyJwk.getEncodedX509Certificates().get(0);
@@ -582,10 +589,14 @@ public class SignerInformationService {
         String kid
     ) throws SignerCertCheckException {
 
-        String thumbprint = certificateUtils.getCertThumbprint(uploadedCertificate);
+        final String thumbprint = certificateUtils.getCertThumbprint(uploadedCertificate);
 
+        // Same content checks as for CMS uploads of DSCs
         contentCheckForThreats(uploadedCertificate);
         contentCheckUploaderCertificate(signerCertificate, countryCode);
+        contentCheckCountryOfOrigin(uploadedCertificate, countryCode);
+        contentCheckOneOf(domain, configProperties.getTrustedCertificates().getAllowedDomains());
+        contentCheckCsca(uploadedCertificate, countryCode, SignerInformationEntity.CertificateType.DSC.name());
 
         SignerInformationEntity signerInformation = resolveDidTargetEntity(thumbprint, countryCode);
 
@@ -610,6 +621,7 @@ public class SignerInformationService {
         SignerInformationEntity savedEntity = signerInformationRepository.save(signerInformation);
 
         DgcMdc.remove(MDC_PROP_UPLOAD_CERT_THUMBPRINT);
+        DgcMdc.remove(MDC_PROP_CSCA_CERT_THUMBPRINT);
 
         return savedEntity;
     }
@@ -734,14 +746,47 @@ public class SignerInformationService {
         }
     }
 
-    private X509CertificateHolder getUploadCertificate(String countryCode) throws SignerCertCheckException {
+    /**
+     * Finds the onboarded UPLOAD certificate of a country holding the given public key.
+     *
+     * <p>Used to bind the key which signed the proof of an uploaded DID document to the participant, the same way
+     * the signer of a CMS package must be the country's UPLOAD certificate. All valid UPLOAD certificates of the
+     * country are considered to support certificate rollover.
+     *
+     * @param countryCode the (normalized) country code of the participant
+     * @param publicKey   the public key which signed the DID proof
+     * @return the matching UPLOAD certificate or empty if the key does not belong to the country's UPLOAD certificate
+     */
+    public Optional<X509CertificateHolder> findUploadCertificateByPublicKey(String countryCode, PublicKey publicKey) {
+        if (countryCode == null || publicKey == null) {
+            return Optional.empty();
+        }
+
         return trustedPartyService.getCertificate(countryCode, TrustedPartyEntity.CertificateType.UPLOAD).stream()
             .map(trustedPartyService::getX509CertificateHolderFromEntity)
             .filter(Objects::nonNull)
-            .findFirst()
-            .orElseThrow(() -> new SignerCertCheckException(
-                SignerCertCheckException.Reason.UPLOADER_CERT_CHECK_FAILED,
-                "Could not find upload certificate for country %s", countryCode));
+            .filter(certificate -> holdsPublicKey(certificate, publicKey))
+            .findFirst();
+    }
+
+    private boolean holdsPublicKey(X509CertificateHolder certificateHolder, PublicKey publicKey) {
+        PublicKey certificateKey;
+        try {
+            certificateKey = new JcaX509CertificateConverter().getCertificate(certificateHolder).getPublicKey();
+        } catch (CertificateException e) {
+            return false;
+        }
+
+        if (certificateKey instanceof ECPublicKey ecCertificateKey && publicKey instanceof ECPublicKey ecKey) {
+            return ecCertificateKey.getW().equals(ecKey.getW())
+                && ecCertificateKey.getParams().getCurve().equals(ecKey.getParams().getCurve());
+        } else if (certificateKey instanceof RSAPublicKey rsaCertificateKey
+            && publicKey instanceof RSAPublicKey rsaKey) {
+            return rsaCertificateKey.getModulus().equals(rsaKey.getModulus())
+                && rsaCertificateKey.getPublicExponent().equals(rsaKey.getPublicExponent());
+        }
+
+        return Arrays.equals(certificateKey.getEncoded(), publicKey.getEncoded());
     }
 
     private String resolveParticipantCountryCode(TrustedUploadDidDocumentDto.VerificationMethod verificationMethod)

@@ -139,7 +139,3 @@ dgc:
 springdoc:
   api-docs:
     enabled: false
-
-logging:
-  level:
-    eu.europa.ec.dgc.did.DidVerificationService: DEBUG

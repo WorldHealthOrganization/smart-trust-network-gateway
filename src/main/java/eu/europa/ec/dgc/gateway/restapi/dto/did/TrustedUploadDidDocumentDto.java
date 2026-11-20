@@ -40,6 +40,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import org.bouncycastle.jce.spec.ECNamedCurveSpec;
 
 @Data
@@ -70,6 +71,7 @@ public class TrustedUploadDidDocumentDto {
     @NoArgsConstructor
     @Getter
     @Setter
+    @ToString
     // Explicit name, otherwise springdoc merges it with eu.europa.ec.dgc.did.model.VerificationMethod
     @Schema(name = "TrustedUploadVerificationMethod")
     @JsonPropertyOrder({"id", "type", "controller", "publicKeyJwk", "domain", "participant", "keyusage"})
@@ -103,6 +105,7 @@ public class TrustedUploadDidDocumentDto {
     @NoArgsConstructor
     @Getter
     @Setter
+    @ToString
     public static class CodeWrapper {
         @NotBlank
         private String code;
@@ -111,6 +114,7 @@ public class TrustedUploadDidDocumentDto {
     @NoArgsConstructor
     @Setter
     @Getter
+    @ToString
     @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
         include = JsonTypeInfo.As.EXISTING_PROPERTY,
@@ -143,6 +147,7 @@ public class TrustedUploadDidDocumentDto {
     @Getter
     @Setter
     @NoArgsConstructor
+    @ToString(callSuper = true)
     @JsonPropertyOrder({"kty", "kid", "x5c", "crv", "x", "y"})
     public static class EcPublicKeyJwk extends PublicKeyJwk {
 
@@ -183,6 +188,7 @@ public class TrustedUploadDidDocumentDto {
     @Getter
     @Setter
     @NoArgsConstructor
+    @ToString(callSuper = true)
     @JsonPropertyOrder({"kty", "kid", "x5c", "e", "n"})
     public static class RsaPublicKeyJwk extends PublicKeyJwk {
 
@@ -210,6 +216,7 @@ public class TrustedUploadDidDocumentDto {
 
     @Getter
     @Setter
+    @ToString
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonPropertyOrder({"type", "created", "domain", "nonce", "proofPurpose", "verificationMethod", "jws"})
     public static class Proof {
